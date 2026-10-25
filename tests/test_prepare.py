@@ -135,3 +135,17 @@ def test_drop_unlabeled_tiles(tmp_path: Path, cfg: Config) -> None:
     assert drop_unlabeled_tiles(tmp_path, unlabeled) == 1
     assert [f.name for f in (tmp_path / "images").iterdir()] == ["b.tif"]
     assert [f.name for f in (tmp_path / "labels").iterdir()] == ["b.tif"]
+
+
+def test_histogram_lut_maps_onto_reference() -> None:
+    from parcelwatch.prepare import histogram_lut
+
+    rng = np.random.default_rng(1)
+    src = rng.integers(60, 120, 50_000).astype("uint8")  # dull, narrow
+    ref = rng.integers(10, 250, 50_000).astype("uint8")  # wide contrast
+    out = histogram_lut(src, ref)[src]
+    assert out.min() < 40 and out.max() > 220
+    assert abs(float(np.median(out)) - float(np.median(ref))) < 10
+    # Monotonic: brighter in stays brighter out.
+    lut = histogram_lut(src, ref)
+    assert (np.diff(lut.astype(int)) >= 0).all()

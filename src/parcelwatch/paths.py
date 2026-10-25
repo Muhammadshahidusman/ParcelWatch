@@ -79,6 +79,11 @@ class Paths:
         return self.processed / "naip_before.tif"
 
     @property
+    def naip_before_matched(self) -> Path:
+        """Before mosaic histogram-matched to After: detector input only."""
+        return self.processed / "naip_before_matched.tif"
+
+    @property
     def naip_after_aligned(self) -> Path:
         """After mosaic resampled onto the Before grid."""
         return self.processed / "naip_after_aligned.tif"

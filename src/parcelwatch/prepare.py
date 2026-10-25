@@ -504,6 +504,47 @@ def run(cfg: Config, *, force: bool = False) -> None:
         mosaic(p.naip_raw("after"), tmp, cfg)
         align_to(p.naip_before, tmp, p.naip_after_aligned)
         tmp.unlink()
+    if force or not p.naip_before_matched.exists():
+        match_histograms(p.naip_before, p.naip_after_aligned, p.naip_before_matched)
     if force or not p.parcels_clipped.exists() or not p.permits_clipped.exists():
         clip_vectors(cfg)
     offset_check(cfg, force=force)
+
+
+def histogram_lut(src: np.ndarray, ref: np.ndarray) -> np.ndarray:
+    """Return a 256-entry lookup table mapping ``src`` uint8 values onto ``ref``'s histogram."""
+    s_cdf = np.cumsum(np.bincount(src.ravel(), minlength=256)).astype("float64")
+    r_cdf = np.cumsum(np.bincount(ref.ravel(), minlength=256)).astype("float64")
+    s_cdf /= s_cdf[-1]
+    r_cdf /= r_cdf[-1]
+    return np.interp(s_cdf, r_cdf, np.arange(256)).round().clip(0, 255).astype("uint8")
+
+
+def match_histograms(src_path: Path, ref_path: Path, out: Path) -> Path:
+    """Write ``src`` with each band histogram-matched to ``ref`` (detector input only).
+
+    The pretrained detector is sensitive to brightness and contrast, and the 2018 NAIP is
+    hazier than 2022. Matching makes the same model with the same settings see both years
+    alike. This is input normalization, never differencing: change is still decided by
+    comparing building objects.
+
+    Args:
+        src_path: Before mosaic.
+        ref_path: Aligned After mosaic (same grid).
+        out: Matched Before mosaic.
+
+    Returns:
+        ``out``.
+    """
+    import rasterio
+
+    with rasterio.open(src_path) as src, rasterio.open(ref_path) as ref:
+        profile = src.profile.copy()
+        luts = [histogram_lut(src.read(b), ref.read(b)) for b in range(1, src.count + 1)]
+        with rasterio.open(out, "w", **profile) as dst:
+            for _, win in dst.block_windows(1):
+                block = src.read(window=win)
+                dst.write(np.stack([luts[i][block[i]] for i in range(src.count)]), window=win)
+            dst.descriptions = src.descriptions
+    log.info("histogram-matched %s to %s -> %s", src_path.name, ref_path.name, out.name)
+    return out

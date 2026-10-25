@@ -249,3 +249,6 @@ These refine the plan above without changing any locked decision. Each is also i
 | Validation | The sample is shuffled and the HTML helper hides the group, so labeling is blind. Labels are ground truth per parcel, so v1 is scored on the same 200 parcels using its own flags |
 | Hexes | `added_sqft` is added area on flagged parcels, rounded to 100. GeoJSON is always written (audited source); PMTiles only when tippecanoe exists |
 | Web imagery | Planetary Computer item tile API, one raster source per NAIP item |
+| Detector input | Before year: `naip_before_matched.tif`, each band histogram-matched to the aligned After mosaic (18 s). Without it, v0 found half the 2018 houses. Chips and figures still use the original mosaics |
+| v1 labels | Training tiles touching a parcel built by 2022 without an Overture footprint are removed; a 50-label spot check is saved to `results/overture_spot_check.json` |
+| Label sources | `validation_labels.csv` (owner) > labels in `validation_sheet.csv` > `validation_labels_claude.csv` (provisional); `metrics.json` records `labeled_by` |

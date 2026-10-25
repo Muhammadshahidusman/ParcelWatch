@@ -1,6 +1,6 @@
 {
   "config_sha256": "929dc23262bfd08ba219638ec12ea398b231cec49076fccb2c0fa2905f479ffc",
-  "git_commit": "9104a829595616dbc6e27ff4a09515df57d617db",
+  "git_commit": "17db93913d7885b32ab26b514ceac839d41dea8d",
   "naip": {
     "before": {
       "date": "2018-10-22",
@@ -31,6 +31,21 @@
       "finished_at": "2026-10-25T19:42:52.755871+00:00",
       "model": "v0",
       "seconds": 9.7
+    },
+    "detect": {
+      "finished_at": "2026-10-25T20:59:33.227746+00:00",
+      "model": "v0",
+      "seconds": 986.6
+    },
+    "changes": {
+      "finished_at": "2026-10-25T21:00:36.935310+00:00",
+      "model": "v0",
+      "seconds": 21.5
+    },
+    "validate": {
+      "finished_at": "2026-10-25T21:01:35.102759+00:00",
+      "model": "v0",
+      "seconds": 27.9
     }
   }
 }

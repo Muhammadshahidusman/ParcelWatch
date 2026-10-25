@@ -22,7 +22,8 @@ YEARS = ("before", "after")
 
 
 def _image_for(p: Paths, year_key: str) -> Path:
-    return p.naip_before if year_key == "before" else p.naip_after_aligned
+    """Detector input: the histogram-matched Before mosaic, or the aligned After mosaic."""
+    return p.naip_before_matched if year_key == "before" else p.naip_after_aligned
 
 
 def _min_object_px(cfg: Config) -> int:
