@@ -28,6 +28,9 @@ dependencies = [
     "pydantic>=2.6",
     "pyyaml>=6.0",
     "python-dotenv>=1.0",
+    "matplotlib>=3.8",
+    "pillow>=10.0",
+    "scikit-image>=0.22",
 ]
 
 [project.optional-dependencies]
@@ -48,7 +51,10 @@ ml = [
 notebooks = [
     "jupyter",
     "leafmap",
-    "matplotlib",
+]
+# Only for screenshot checks of the web map against the installed Chrome.
+webcheck = [
+    "playwright",
 ]
 
 [project.scripts]
