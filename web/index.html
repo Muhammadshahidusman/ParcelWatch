@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://planetarycomputer.microsoft.com; connect-src 'self' https://planetarycomputer.microsoft.com; worker-src blob:; child-src blob:">
+<title>ParcelWatch</title>
+<meta name="description" content="ParcelWatch finds buildings added, expanded or removed on land parcels in east Wake County, NC between 2018 and 2022 NAIP imagery, and flags change with no building permit on file. Public view shows hexagon totals only.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='1' width='14' height='14' fill='none' stroke='%230F766E' stroke-width='2'/%3E%3Crect x='8' y='8' width='6' height='6' fill='%230F766E'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="wordmark" href="./" aria-label="ParcelWatch home">
+    <svg class="logo" viewBox="0 0 16 16" aria-hidden="true"><rect x="1" y="1" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"/><rect x="8" y="8" width="6" height="6" fill="currentColor"/></svg>
+    <b>Parcel</b><span>Watch</span>
+  </a>
+  <div class="study small" id="study-label">Wake County, NC · 2018 → 2022</div>
+  <div class="actions">
+    <a class="btn" href="case-study.html"><span class="label">About</span><span aria-hidden="true" class="icon-only"></span></a>
+    <button class="btn" id="theme" type="button" aria-label="Theme: system">◐</button>
+  </div>
+</header>
+
+<div class="app">
+  <aside class="panel" id="panel" aria-label="Headline statistics">
+    <button class="sheet-handle" id="sheet-handle" type="button" aria-label="Expand statistics"></button>
+    <div class="hero" id="hero"><span class="skeleton"></span></div>
+    <p class="hero-label">parcels with unpermitted change detected</p>
+    <hr>
+    <ul class="rows" id="rows">
+      <li><svg class="glyph" viewBox="0 0 14 14" aria-hidden="true"><rect x="1" y="1" width="12" height="12" fill="var(--chg-new)"/></svg>New buildings<span class="count" id="n-new">–</span></li>
+      <li><svg class="glyph" viewBox="0 0 14 14" aria-hidden="true"><rect x="1" y="1" width="12" height="12" fill="none" stroke="var(--chg-expanded)" stroke-width="2"/><rect x="1" y="1" width="6" height="12" fill="var(--chg-expanded)"/></svg>Expanded<span class="count" id="n-expanded">–</span></li>
+      <li><svg class="glyph" viewBox="0 0 14 14" aria-hidden="true"><rect x="1" y="1" width="12" height="12" fill="none" stroke="var(--chg-demolished)" stroke-width="2"/><line x1="1" y1="13" x2="13" y2="1" stroke="var(--chg-demolished)" stroke-width="2"/></svg>Demolished<span class="count" id="n-demolished">–</span></li>
+    </ul>
+    <p class="note">Buildings on flagged parcels, by change type.</p>
+    <hr>
+    <div class="small">Est. missed tax</div>
+    <div class="money" id="money"><span class="skeleton"></span></div>
+    <div class="note" id="money-note"></div>
+    <hr>
+    <button class="btn btn-primary" id="open-method" type="button">Read the method</button>
+    <p class="caption" style="margin-top:16px">Flags are leads from aerial imagery, not findings. A field review is needed before any action.</p>
+  </aside>
+
+  <section class="map-wrap" id="map-wrap" aria-label="Before and after aerial imagery of a 25 km² study area in east Wake County, North Carolina, 2018 and 2022, with hexagons shaded by the number of parcels with unpermitted change detected.">
+    <div class="loading caption" id="loading">Loading imagery…</div>
+    <div id="map-before" class="map"></div>
+    <div id="map-after" class="map"></div>
+    <div class="divider" id="divider"></div>
+    <button class="handle" id="handle" type="button" role="slider" aria-label="Swipe between 2018 and 2022" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50">◀▶</button>
+    <span class="year left" id="year-left">2018</span><span class="year right" id="year-right">2022</span>
+    <div class="toggles" role="group" aria-label="Layers">
+      <button class="pill" type="button" aria-pressed="true" data-layer="hex">Flag density</button>
+      <button class="pill" type="button" aria-pressed="true" data-layer="before">2018 imagery</button>
+      <button class="pill" type="button" aria-pressed="true" data-layer="after">2022 imagery</button>
+    </div>
+    <div class="legend" id="legend">
+      <button class="pill legend-toggle" id="legend-toggle" type="button" aria-expanded="true">Legend</button>
+      <div class="legend-body">
+        <h3>Flagged parcels per hex</h3>
+        <div class="ramp" id="ramp"></div>
+        <div class="ramp-labels"><span id="ramp-min">1</span><span id="ramp-max">–</span></div>
+        <p class="caption" style="margin:8px 0 0">Hexes with fewer than 5 parcels are hidden.</p>
+      </div>
+    </div>
+    <div class="zoom">
+      <button class="btn" id="zoom-in" type="button" aria-label="Zoom in">+</button>
+      <button class="btn" id="zoom-out" type="button" aria-label="Zoom out">−</button>
+      <button class="btn" id="zoom-fit" type="button" aria-label="Fit study area">⌖</button>
+    </div>
+    <div class="attribution caption">Imagery: USDA NAIP · Data: Wake County, NC, Overture Maps</div>
+    <div class="error" id="error"><div><p>Couldn't load the map tiles. Check your connection and try again.</p><button class="btn btn-primary" type="button" onclick="location.reload()">Retry</button></div></div>
+  </section>
+</div>
+
+<aside class="drawer" id="drawer" aria-label="Method" aria-hidden="true">
+  <button class="btn drawer-close" id="close-method" type="button" aria-label="Close method">✕</button>
+  <h2>How ParcelWatch works</h2>
+  <ol>
+    <li><b>Download.</b> USDA NAIP aerial imagery for 2018 and 2022 (0.6 m, 4 bands), Wake County parcels and building permits, Overture building footprints.</li>
+    <li><b>Prepare.</b> Both years go on one pixel grid in UTM 17N. The offset between years is measured at road intersections and sets the match tolerance.</li>
+    <li><b>Detect.</b> The same building model runs on both years with the same settings.</li>
+    <li><b>Compare.</b> Buildings are matched as objects, never by pixel differencing. Each one is new, expanded (+20 m² and 1.2×), unchanged or demolished.</li>
+    <li><b>Check permits.</b> Each changed parcel is checked for a building permit issued from Oct 2017 to Oct 2022, by location or parcel number.</li>
+    <li><b>Validate and price.</b> 200 parcels are hand-checked. Missed tax uses the median value per sq ft of recent homes, 2026 tax rates, and is multiplied by measured precision.</li>
+  </ol>
+  <h3>Limitations</h3>
+  <ul>
+    <li>Tree cover and shadows hide some roofs and fool the model.</li>
+    <li>NAIP is accurate to about ±6 m, so small additions can be missed.</li>
+    <li>Only roofed buildings count. Pools, decks and patios aren't detected.</li>
+    <li>Fire district tax is left out, so dollar figures are conservative.</li>
+  </ul>
+  <p><a href="case-study.html">Read the full case study</a></p>
+</aside>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

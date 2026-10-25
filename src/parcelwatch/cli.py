@@ -36,7 +36,13 @@ def _start(command: str, config: Path) -> Config:
     """Load the config and start logging for one command."""
     cfg = load_config(config)
     log_file = setup_logging(command, Paths(cfg.root).logs)
-    log.info("parcelwatch %s %s, config %s (sha256 %s)", __version__, command, config, cfg.sha256)
+    log.info(
+        "parcelwatch %s %s, config %s (sha256 %s)",
+        __version__,
+        command,
+        config,
+        cfg.sha256,
+    )
     log.info("logging to %s", log_file)
     return cfg
 

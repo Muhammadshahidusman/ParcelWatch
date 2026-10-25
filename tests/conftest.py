@@ -42,16 +42,25 @@ def tiny_scene(cfg: Config) -> dict[str, gpd.GeoDataFrame]:
     x0, y0 = cfg.aoi.bbox_utm17n[0] + 100.0, cfg.aoi.bbox_utm17n[1] + 100.0
     crs = cfg.aoi.working_crs
     parcels = gpd.GeoDataFrame(
-        {"PIN_NUM": ["0000000001", "0000000002", "0000000003"], "CITY_DECODE": ["", "", ""]},
+        {
+            "PIN_NUM": ["0000000001", "0000000002", "0000000003"],
+            "CITY_DECODE": ["", "", ""],
+        },
         geometry=[box(x0 + i * 30, y0, x0 + (i + 1) * 30, y0 + 30) for i in range(3)],
         crs=crs,
     )
     before = gpd.GeoDataFrame(
-        geometry=[box(x0 + 10, y0 + 10, x0 + 20, y0 + 20), box(x0 + 70, y0 + 10, x0 + 80, y0 + 20)],
+        geometry=[
+            box(x0 + 10, y0 + 10, x0 + 20, y0 + 20),
+            box(x0 + 70, y0 + 10, x0 + 80, y0 + 20),
+        ],
         crs=crs,
     )
     after = gpd.GeoDataFrame(
-        geometry=[box(x0 + 10, y0 + 10, x0 + 20, y0 + 20), box(x0 + 40, y0 + 10, x0 + 50, y0 + 20)],
+        geometry=[
+            box(x0 + 10, y0 + 10, x0 + 20, y0 + 20),
+            box(x0 + 40, y0 + 10, x0 + 50, y0 + 20),
+        ],
         crs=crs,
     )
     permits = gpd.GeoDataFrame(

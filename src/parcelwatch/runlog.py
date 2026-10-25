@@ -33,7 +33,10 @@ def setup_logging(command: str, log_dir: Path, level: int = logging.INFO) -> Pat
     for h in list(root.handlers):
         root.removeHandler(h)
     fmt = logging.Formatter(LOG_FORMAT)
-    for handler in (logging.StreamHandler(), logging.FileHandler(log_file, encoding="utf-8")):
+    for handler in (
+        logging.StreamHandler(),
+        logging.FileHandler(log_file, encoding="utf-8"),
+    ):
         handler.setFormatter(fmt)
         root.addHandler(handler)
     return log_file
@@ -43,7 +46,11 @@ def git_commit(root: Path) -> str | None:
     """Return the current git commit hash of ``root``, or None outside a repo."""
     try:
         out = subprocess.run(
-            ["git", "rev-parse", "HEAD"], cwd=root, capture_output=True, text=True, check=True
+            ["git", "rev-parse", "HEAD"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=True,
         )
     except (OSError, subprocess.CalledProcessError):
         return None
@@ -68,7 +75,10 @@ def update_manifest(
             "git_commit": git_commit(cfg.root),
             "naip": {
                 k: {"date": str(d.date), "items": d.items}
-                for k, d in (("before", cfg.imagery.before), ("after", cfg.imagery.after))
+                for k, d in (
+                    ("before", cfg.imagery.before),
+                    ("after", cfg.imagery.after),
+                )
             },
         }
     )

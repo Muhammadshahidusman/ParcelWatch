@@ -42,10 +42,11 @@ def test_missing_config_fails() -> None:
     assert runner.invoke(app, ["download", "--config", "nope.yaml"]).exit_code != 0
 
 
-def test_unbuilt_step_exits_nonzero_and_writes_log(tmp_project: Path) -> None:
+def test_failing_step_exits_nonzero_and_writes_log(tmp_project: Path) -> None:
+    """With no inputs on disk, ``changes`` must fail loudly and log why."""
     cfg = str(tmp_project / "configs" / "wake_pilot.yaml")
-    result = runner.invoke(app, ["report", "--config", cfg])
-    assert result.exit_code == 2
-    logs = list((tmp_project / "results" / "logs").glob("report_*.log"))
+    result = runner.invoke(app, ["changes", "--config", cfg])
+    assert result.exit_code == 1
+    logs = list((tmp_project / "results" / "logs").glob("changes_*.log"))
     assert len(logs) == 1
-    assert "not implemented yet" in logs[0].read_text("utf-8")
+    assert "changes failed" in logs[0].read_text("utf-8")

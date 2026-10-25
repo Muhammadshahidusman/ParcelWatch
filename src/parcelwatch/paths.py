@@ -84,6 +84,59 @@ class Paths:
         return self.processed / "naip_after_aligned.tif"
 
     @property
+    def parcels_clipped(self) -> Path:
+        """Parcels intersecting the box, EPSG:26917, no owner/address columns."""
+        return self.processed / "parcels.gpkg"
+
+    @property
+    def permits_clipped(self) -> Path:
+        """Counting-type permits in the window, in the box or matching a box PIN."""
+        return self.processed / "permits.gpkg"
+
+    @property
+    def overture_clipped(self) -> Path:
+        """Overture buildings clipped to the box in EPSG:26917."""
+        return self.processed / "overture_buildings.gpkg"
+
+    @property
+    def corporate_limits_clipped(self) -> Path:
+        """Town limits clipped to the box in EPSG:26917."""
+        return self.processed / "corporate_limits.gpkg"
+
+    @property
+    def overture_roads(self) -> Path:
+        """Cached Overture road segments for the box, used to find intersections."""
+        return self.raw / "overture_roads.parquet"
+
+    @property
+    def offset_dir(self) -> Path:
+        """Before/after chips at road intersections for the owner's offset check."""
+        return self.results / "offset_check"
+
+    @property
+    def offset_measurements(self) -> Path:
+        """Owner-filled offsets (meters) at the check points."""
+        return self.results / "offset_measurements.csv"
+
+    @property
+    def jurisdiction_check(self) -> Path:
+        """Share of the box in each town, from the corporate limits layer."""
+        return self.results / "jurisdiction_check.json"
+
+    def building_changes_for(self, model: str) -> Path:
+        """Labeled building changes for one model (private)."""
+        return self.results / f"building_changes_{model}.gpkg"
+
+    def parcel_changes_for(self, model: str) -> Path:
+        """Parcel change table for one model (private)."""
+        return self.results / f"parcel_changes_{model}.gpkg"
+
+    @property
+    def model_selection(self) -> Path:
+        """Which model is in use after the promotion rule."""
+        return self.results / "model_selection.json"
+
+    @property
     def alignment_report(self) -> Path:
         """Measured offset and the derived match tolerance."""
         return self.results / "alignment_report.json"

@@ -1,0 +1,19 @@
+# ParcelWatch matplotlib style (DESIGN section 10)
+font.family: sans-serif
+font.sans-serif: Inter, Segoe UI, DejaVu Sans, Arial
+font.size: 11
+text.color: 0F172A
+axes.labelcolor: 0F172A
+axes.edgecolor: E3E6EA
+axes.facecolor: FFFFFF
+axes.spines.top: False
+axes.spines.right: False
+axes.grid: True
+grid.color: E3E6EA
+grid.linewidth: 0.8
+xtick.color: 5B6676
+ytick.color: 5B6676
+figure.facecolor: FFFFFF
+savefig.facecolor: FFFFFF
+figure.dpi: 150
+savefig.dpi: 150

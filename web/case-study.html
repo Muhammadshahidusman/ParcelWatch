@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'">
+<title>ParcelWatch Case Study</title>
+<meta name="description" content="How ParcelWatch compares 2018 and 2022 NAIP imagery with Wake County parcels and permits to find unpermitted building change, with honest accuracy and dollar estimates.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="wordmark" href="./" aria-label="ParcelWatch map">
+    <svg class="logo" viewBox="0 0 16 16" aria-hidden="true"><rect x="1" y="1" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"/><rect x="8" y="8" width="6" height="6" fill="currentColor"/></svg>
+    <b>Parcel</b><span>Watch</span>
+  </a>
+  <div class="study small">Case study</div>
+  <div class="actions"><a class="btn" href="./">Open the map</a></div>
+</header>
+<main class="page">
+  <h1>Finding the buildings the tax roll missed</h1>
+  <p id="lede">ParcelWatch compared 2018 and 2022 aerial imagery over 25 km² of east Wake County, NC, and checked every changed parcel against the county's building permits.</p>
+
+  <div class="tiles">
+    <div class="tile"><div class="small">Parcels flagged</div><div class="value" id="t-flagged">–</div><div class="caption">unpermitted change detected</div></div>
+    <div class="tile"><div class="small">Precision</div><div class="value" id="t-precision">–</div><div class="caption" id="t-precision-note">hand-checked flags</div></div>
+    <div class="tile"><div class="small">Est. missed tax</div><div class="value" id="t-tax">–</div><div class="caption" id="t-tax-note">per year, precision-adjusted</div></div>
+  </div>
+
+  <figure>
+    <img src="img/before_after_readme.png" alt="The same 400 m square of east Wake County in 2018 and 2022 NAIP imagery, showing new homes on what was open land." width="1200" height="800">
+    <figcaption class="caption">The neighborhood hex with the most flags, 2018 (left) and 2022 (right). Imagery: USDA NAIP. Data: Wake County, NC; Overture Maps Foundation.</figcaption>
+  </figure>
+
+  <h2>How it works</h2>
+  <svg class="pipeline" viewBox="0 0 720 120" role="img" aria-label="Pipeline: download, prepare, detect, changes, validate, report">
+    <g font-family="Inter, system-ui, sans-serif" font-size="13" fill="currentColor">
+      <g stroke="currentColor" stroke-opacity="0.35" fill="none">
+        <rect x="2" y="30" width="104" height="56" rx="8"/><rect x="124" y="30" width="104" height="56" rx="8"/>
+        <rect x="246" y="30" width="104" height="56" rx="8"/><rect x="368" y="30" width="104" height="56" rx="8"/>
+        <rect x="490" y="30" width="104" height="56" rx="8"/><rect x="612" y="30" width="104" height="56" rx="8"/>
+        <path d="M106 58h16M228 58h16M350 58h16M472 58h16M594 58h16"/>
+      </g>
+      <g text-anchor="middle" font-weight="600">
+        <text x="54" y="54">1 Download</text><text x="176" y="54">2 Prepare</text><text x="298" y="54">3 Detect</text>
+        <text x="420" y="54">4 Changes</text><text x="542" y="54">5 Validate</text><text x="664" y="54">6 Report</text>
+      </g>
+      <g text-anchor="middle" font-size="11" opacity="0.7">
+        <text x="54" y="72">NAIP, parcels</text><text x="176" y="72">align, offset</text><text x="298" y="72">same model ×2</text>
+        <text x="420" y="72">match + permits</text><text x="542" y="72">200 parcels</text><text x="664" y="72">$ + hexes</text>
+      </g>
+    </g>
+  </svg>
+  <ol>
+    <li><b>Download.</b> USDA NAIP imagery for 2018 (flown 2018-10-22) and 2022 (2022-09-27 and 2022-10-06), 0.6 m, red, green, blue and near infrared. Wake County parcels, building permits and town limits. Overture building footprints for training labels.</li>
+    <li><b>Prepare.</b> Both years go onto one 0.6 m grid in NAD83 / UTM 17N. The offset between years is measured at 5 road intersections; the match tolerance is that offset plus 1 m, kept between 3 and 6 m.</li>
+    <li><b>Detect.</b> One building model, one set of settings, both years.</li>
+    <li><b>Compare buildings, not pixels.</b> NAIP is only accurate to about ±6 m, so pixel differencing would light up every roof edge. Buildings are matched as objects: no match means new; at least +20 m² and 1.2× the old area means expanded; a 2018 building with no 2022 match means demolished.</li>
+    <li><b>Check permits.</b> A changed parcel counts as permitted if any building-related permit issued between 2017-10-22 and 2022-10-06 sits inside it or carries its parcel number.</li>
+    <li><b>Validate and price.</b> 100 flagged and 100 unchanged parcels are drawn at random and checked by eye, blind to the model's answer.</li>
+  </ol>
+
+  <h2>Accuracy</h2>
+  <p id="acc-text">Validation is pending.</p>
+  <table id="confusion" hidden>
+    <thead><tr><th></th><th class="num">Real change</th><th class="num">No change</th></tr></thead>
+    <tbody>
+      <tr><th>Flagged</th><td class="num mono" id="c-tp"></td><td class="num mono" id="c-fp"></td></tr>
+      <tr><th>Not flagged</th><td class="num mono" id="c-fn"></td><td class="num mono" id="c-tn"></td></tr>
+    </tbody>
+  </table>
+  <h3 class="small" style="margin-top:24px">False alarms by cause</h3>
+  <div class="bars" id="causes"><p class="caption">Shown after validation.</p></div>
+
+  <h2>Money</h2>
+  <pre>value per sq ft = median(BLDG_VAL / HEATEDAREA), homes built 2021 or later in the box
+missed value    = added sq ft × value per sq ft × 100% assessment
+yearly tax      = missed value × (53.71¢ county + town rate) per $100
+                  Wendell +42.00¢, Knightdale +44.00¢, unincorporated +0
+reported        = sum over flagged parcels × measured precision</pre>
+  <p id="money-text">Tax year 2026 rates. Fire district tax is left out, so the figure is conservative.</p>
+
+  <h2>Limitations</h2>
+  <ul>
+    <li>Flags are leads from aerial imagery, not findings. A field review is needed before any action.</li>
+    <li>Trees and shadows hide roofs and fool the detector; both cause false alarms and misses.</li>
+    <li>NAIP's ±6 m accuracy means small additions under 20 m² can't be told apart from noise.</li>
+    <li>Only roofed buildings count. Pools, decks, patios and interior finishes aren't detected.</li>
+    <li>A permit inside the window counts for the whole parcel, even if it was for a different building.</li>
+    <li>Value per sq ft is one median for the whole area; real assessments vary by house.</li>
+    <li>The public map shows H3 hexagons with at least 5 parcels. No parcel, address or owner is published.</li>
+  </ul>
+
+  <h2>Applying this elsewhere</h2>
+  <p><b>US counties.</b> Any county with open parcels and permits can run it: a new config file maps field names, tax rates and the study box. NAIP covers the lower 48 every two to three years.</p>
+  <p><b>Gulf municipalities.</b> The same workflow is a permit compliance check: compare building footprints between two image dates and match them against building permits by plot number or location. Higher-resolution imagery and a model fine-tuned on local roof types would replace NAIP.</p>
+
+  <h2>Links</h2>
+  <ul>
+    <li><a href="./">Interactive map</a></li>
+    <li>Code: GitHub repo <span class="mono">parcelwatch</span> (MIT)</li>
+    <li>Contact: Muhammad Shahid Usman, <a href="mailto:mapsync360@gmail.com">mapsync360@gmail.com</a></li>
+  </ul>
+  <p class="caption">Imagery: USDA NAIP. Data: Wake County, NC (CC BY 4.0); Overture Maps Foundation (ODbL).</p>
+</main>
+<script src="case.js"></script>
+</body>
+</html>

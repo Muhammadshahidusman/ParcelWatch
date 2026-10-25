@@ -14,7 +14,14 @@ from parcelwatch.runlog import update_manifest
 
 log = logging.getLogger(__name__)
 
-STEPS: tuple[str, ...] = ("download", "prepare", "detect", "changes", "validate", "report")
+STEPS: tuple[str, ...] = (
+    "download",
+    "prepare",
+    "detect",
+    "changes",
+    "validate",
+    "report",
+)
 
 
 def run_step(
