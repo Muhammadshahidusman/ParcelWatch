@@ -264,3 +264,16 @@ def test_choose_labels_prefers_owner(tmp_path) -> None:  # type: ignore[no-untyp
     )
     out, who = choose_labels(sheet, tmp_path)
     assert who == "owner" and out["label"].tolist() == ["new", "no_change"]
+
+
+def test_precision_by_claim() -> None:
+    from parcelwatch.validate import precision_by_claim
+
+    sheet = pd.DataFrame({"group": ["flagged"] * 4 + ["unchanged"], "n_new": [1, 1, 0, 0, 0],
+                          "n_expanded": [0, 0, 1, 0, 0], "label": ["new", "no_change", "no_change",
+                          "no_change", "new"]})  # fmt: skip
+    assert precision_by_claim(sheet) == {
+        "new": {"n": 2, "confirmed": 1},
+        "expanded": {"n": 1, "confirmed": 0},
+        "demolished_only": {"n": 1, "confirmed": 0},
+    }

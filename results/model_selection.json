@@ -1,0 +1,4 @@
+{
+  "model": "v0",
+  "rule": "v1 precision >= v0 precision on the same 200-parcel sample"
+}

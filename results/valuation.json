@@ -1,0 +1,24 @@
+{
+  "model": "v0",
+  "value_per_sqft": 172.2520754716981,
+  "rates_cents_per_100": {
+    "county": 53.71,
+    "municipal": {
+      "WENDELL": 42.0,
+      "KNIGHTDALE": 44.0,
+      "default": 0.0
+    }
+  },
+  "assessment_ratio": 1.0,
+  "include_fire_tax": false,
+  "tax_year": 2026,
+  "formula": "yearly_tax = added_sqft * value_per_sqft * assessment_ratio * rate_cents / 100 / 100; reported = sum(flagged) * precision",
+  "validation": "claude_provisional",
+  "n_flagged": 1230,
+  "added_sqft_flagged": 1618282.96959454,
+  "precision": 0.2,
+  "est_missed_value_usd_raw": 278752600.2131624,
+  "est_yearly_tax_usd_raw": 1926606.8508958227,
+  "est_missed_value_usd_adjusted": 55750520.04263249,
+  "est_yearly_tax_usd_adjusted": 385321.3701791646
+}

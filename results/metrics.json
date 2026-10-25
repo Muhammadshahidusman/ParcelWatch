@@ -1,0 +1,52 @@
+{
+  "n_sample": 200,
+  "tp": 20,
+  "fp": 80,
+  "fn": 13,
+  "tn": 87,
+  "precision": 0.2,
+  "miss_rate": 0.13,
+  "false_alarm_causes": {
+    "other": 44,
+    "trees": 34,
+    "trailer_or_vehicle": 1,
+    "solar_or_roof_material": 1
+  },
+  "model": "v0",
+  "by_model": {
+    "v0": {
+      "n_sample": 200,
+      "tp": 20,
+      "fp": 80,
+      "fn": 13,
+      "tn": 87,
+      "precision": 0.2,
+      "miss_rate": 0.13,
+      "false_alarm_causes": {
+        "other": 44,
+        "trees": 34,
+        "trailer_or_vehicle": 1,
+        "solar_or_roof_material": 1
+      }
+    }
+  },
+  "labeled_by": "claude_provisional",
+  "precision_by_claim": {
+    "new": {
+      "n": 56,
+      "confirmed": 19
+    },
+    "expanded": {
+      "n": 35,
+      "confirmed": 1
+    },
+    "new_and_expanded": {
+      "n": 1,
+      "confirmed": 0
+    },
+    "demolished_only": {
+      "n": 8,
+      "confirmed": 0
+    }
+  }
+}

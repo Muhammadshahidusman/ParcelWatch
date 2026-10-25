@@ -112,25 +112,46 @@ def false_alarm_chart(causes: dict[str, int], out: Path) -> Path:
     return out
 
 
+def example_center(cfg: Config) -> tuple[float, float] | None:
+    """Center of the H3 res-9 cell with the most detected new buildings (new construction).
+
+    Detections are used only to choose where to look; the figure shows imagery alone.
+    """
+    import h3
+
+    path = Paths(cfg.root).building_changes
+    if not path.exists():
+        return None
+    b = gpd.read_file(path)
+    new = b[b["change"] == "new"]
+    if new.empty:
+        return None
+    pts = new.representative_point().to_crs("EPSG:4326")
+    cells = [h3.latlng_to_cell(pt.y, pt.x, cfg.privacy.h3_resolution) for pt in pts]
+    top = max(set(cells), key=cells.count)
+    lat, lng = h3.cell_to_latlng(top)
+    c = gpd.GeoSeries.from_xy([lng], [lat], crs="EPSG:4326").to_crs(cfg.aoi.working_crs)[0]
+    return (c.x, c.y)
+
+
 def make_figures(cfg: Config, hexes: gpd.GeoDataFrame, stats: dict[str, Any]) -> list[Path]:
     """Make every static figure and copy the public ones to ``web/img/``.
 
-    The example neighborhood is the hex with the most flags, shown as imagery only
-    (no parcel lines or IDs).
+    The example neighborhood is the hex with the most detected new buildings, shown as
+    imagery only (no parcel lines or IDs).
     """
     p = Paths(cfg.root)
     figs = p.results / "figures"
     web_img = cfg.root / "web" / "img"
     web_img.mkdir(parents=True, exist_ok=True)
     made: list[Path] = []
-    if not hexes.empty:
-        top = hexes.sort_values(["n_flagged", "n_changed"], ascending=False).iloc[0]
-        c = gpd.GeoSeries([top.geometry.centroid], crs="EPSG:4326").to_crs(cfg.aoi.working_crs)[0]
+    center = example_center(cfg)
+    if center is not None:
         for name, size in (
             ("before_after_slide", (1600, 900)),
             ("before_after_readme", (1200, 800)),
         ):
-            made.append(before_after(cfg, (c.x, c.y), figs / f"{name}.png", size))
+            made.append(before_after(cfg, center, figs / f"{name}.png", size))
     if stats.get("false_alarm_causes"):
         made.append(false_alarm_chart(stats["false_alarm_causes"], figs / "false_alarm_causes.png"))
     for f in made:

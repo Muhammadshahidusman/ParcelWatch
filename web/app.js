@@ -49,6 +49,7 @@
       $("money-note").textContent = "Shown once 200 parcels are hand-checked and precision is measured.";
     }
     var b = s.hex_breaks || [];
+    $("ramp-max").textContent = b.length ? "≥ " + Math.ceil(b[b.length - 1]) : "1";
     $("ramp").innerHTML = RAMP.slice(0, Math.max(1, b.length + 1))
       .map(function (c) { return '<span style="background:' + c + '"></span>'; }).join("");
   }
@@ -65,6 +66,8 @@
   }
   var before = makeMap("map-before");
   var after = makeMap("map-after");
+  var beforeLoaded = new Promise(function (resolve) { before.once("load", resolve); });
+  var afterLoaded = new Promise(function (resolve) { after.once("load", resolve); });
   before.touchZoomRotate.disableRotation();
   after.touchZoomRotate.disableRotation();
 
@@ -148,13 +151,20 @@
       map.addLayer({ id: "box", type: "line", source: "box", paint: { "line-color": "#0F172A", "line-width": 1.5, "line-dasharray": [2, 2] } });
       if (++ready === 2) $("loading").remove();
     }
-    if (before.loaded()) onLoad(before, s.naip_items.before, "naip-b"); else before.on("load", function () { onLoad(before, s.naip_items.before, "naip-b"); });
-    if (after.loaded()) onLoad(after, s.naip_items.after, "naip-a"); else after.on("load", function () { onLoad(after, s.naip_items.after, "naip-a"); });
+    // The maps may finish loading before stats.json arrives, so wait on promises
+    // captured at construction instead of checking map.loaded() here.
+    beforeLoaded.then(function () { onLoad(before, s.naip_items.before, "naip-b"); });
+    afterLoaded.then(function () { onLoad(after, s.naip_items.after, "naip-a"); });
   }).catch(function () { $("error").classList.add("show"); });
 
   var tileErrors = 0;
   [before, after].forEach(function (m) {
-    m.on("error", function () { if (++tileErrors > 40) $("error").classList.add("show"); });
+    m.on("error", function (e) {
+      // Planetary Computer answers 404 for tiles just outside a NAIP item's footprint.
+      var status = e && e.error && e.error.status;
+      if (status === 404) return;
+      if (++tileErrors > 40) $("error").classList.add("show");
+    });
   });
 
   /* ---------- layer toggles ---------- */

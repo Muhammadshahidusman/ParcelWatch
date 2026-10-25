@@ -92,6 +92,7 @@ def build_stats(
         "validation_tp": metrics["tp"] if metrics else None,
         "validation_status": (metrics.get("labeled_by", "owner") if metrics else "pending"),
         "false_alarm_causes": metrics["false_alarm_causes"] if metrics else {},
+        "precision_by_claim": metrics.get("precision_by_claim", {}) if metrics else {},
         "confusion": {k: metrics[k] for k in ("tp", "fp", "fn", "tn")} if metrics else None,
         "est_yearly_tax_usd_adjusted": (
             round(totals["est_yearly_tax_usd_adjusted"], -2)

@@ -32,7 +32,7 @@
 
   <figure>
     <img src="img/before_after_readme.png" alt="The same 400 m square of east Wake County in 2018 and 2022 NAIP imagery, showing new homes on what was open land." width="1200" height="800">
-    <figcaption class="caption">The neighborhood hex with the most flags, 2018 (left) and 2022 (right). Imagery: USDA NAIP. Data: Wake County, NC; Overture Maps Foundation.</figcaption>
+    <figcaption class="caption">The hexagon with the most detected new buildings, 2018 (left) and 2022 (right). Imagery: USDA NAIP. Data: Wake County, NC; Overture Maps Foundation.</figcaption>
   </figure>
 
   <h2>How it works</h2>
@@ -72,7 +72,13 @@
       <tr><th>Not flagged</th><td class="num mono" id="c-fn"></td><td class="num mono" id="c-tn"></td></tr>
     </tbody>
   </table>
+  <h3 class="small" style="margin-top:24px">Confirmed flags by what the model claimed</h3>
+  <table id="by-claim" hidden>
+    <thead><tr><th>Claim</th><th class="num">Flags</th><th class="num">Confirmed</th><th class="num">Precision</th></tr></thead>
+    <tbody></tbody>
+  </table>
   <h3 class="small" style="margin-top:24px">False alarms by cause</h3>
+  <p class="caption">"Other" means the same building stood in both years but the model drew it with a different outline, or missed it in 2018.</p>
   <div class="bars" id="causes"><p class="caption">Shown after validation.</p></div>
 
   <h2>Money</h2>

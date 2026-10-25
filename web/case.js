@@ -36,6 +36,18 @@
       $("c-tp").textContent = c.tp; $("c-fp").textContent = c.fp;
       $("c-fn").textContent = c.fn; $("c-tn").textContent = c.tn;
     }
+    var names = { new: "New building", expanded: "Expanded", new_and_expanded: "New and expanded",
+      demolished_only: "Demolished only" };
+    var bc = s.precision_by_claim || {};
+    var claimRows = Object.keys(bc).map(function (k) {
+      var r = bc[k];
+      return "<tr><td>" + names[k] + '</td><td class="num mono">' + r.n + '</td><td class="num mono">' +
+        r.confirmed + '</td><td class="num mono">' + Math.round(100 * r.confirmed / r.n) + "%</td></tr>";
+    });
+    if (claimRows.length) {
+      $("by-claim").hidden = false;
+      $("by-claim").querySelector("tbody").innerHTML = claimRows.join("");
+    }
     var causes = Object.entries(s.false_alarm_causes || {}).sort(function (a, b) { return b[1] - a[1]; });
     if (causes.length) {
       var max = causes[0][1];

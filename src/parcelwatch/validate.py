@@ -210,6 +210,7 @@ def run(cfg: Config, *, make_sheet: bool, score: bool, force: bool = False) -> N
             "model": chosen,
             "by_model": result,
             "labeled_by": who,
+            "precision_by_claim": precision_by_claim(sheet),
         }
         p.metrics.write_text(json.dumps(metrics, indent=2), "utf-8")
         p.model_selection.write_text(
@@ -222,6 +223,29 @@ def run(cfg: Config, *, make_sheet: bool, score: bool, force: bool = False) -> N
             metrics["precision"],
             metrics["miss_rate"],
         )
+
+
+def precision_by_claim(sheet: pd.DataFrame) -> dict[str, dict[str, int]]:
+    """Confirmed flags by what the model claimed (new, expanded, demolished only, mixed).
+
+    Args:
+        sheet: Labeled sheet with ``group``, ``n_new``, ``n_expanded`` and ``label``.
+
+    Returns:
+        ``{claim: {"n": flags, "confirmed": real changes}}`` for the flagged group.
+    """
+    f = sheet[sheet["group"] == "flagged"]
+    new, exp = f["n_new"] > 0, f["n_expanded"] > 0
+    claim = pd.Series("demolished_only", index=f.index)
+    claim[new & ~exp] = "new"
+    claim[exp & ~new] = "expanded"
+    claim[new & exp] = "new_and_expanded"
+    real = f["label"].isin(CHANGE_LABELS)
+    return {
+        str(c): {"n": int((claim == c).sum()), "confirmed": int((real & (claim == c)).sum())}
+        for c in ("new", "expanded", "new_and_expanded", "demolished_only")
+        if (claim == c).any()
+    }
 
 
 OWNER_LABELS = "validation_labels.csv"  # exported by the HTML helper
