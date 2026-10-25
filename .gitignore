@@ -1,0 +1,42 @@
+# Data and models (TRD section 8): never committed
+data/
+models/
+*.pth
+*.pt
+*.ckpt
+
+# Private results: parcel-level, never committed or published
+results/parcel_changes.*
+results/building_changes.*
+results/validation_sheet.csv
+results/review.html
+results/chips/
+results/offset_check/
+results/logs/
+results/*.gpkg
+
+# Secrets
+.env
+.env.*
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
