@@ -33,6 +33,8 @@ CHIP_HALF_M = 40.0  # chips are 80 x 80 m around each intersection
 EDGE_MARGIN_M = 150.0  # keep check points this far inside the box
 # Wake County inspects these towns' permits; any other town in the box breaks the permit check.
 COUNTY_INSPECTED_TOWNS = {"WENDELL", "KNIGHTDALE", "ROLESVILLE", "ZEBULON"}
+STABLE_ROAD_CLASSES = {"motorway", "trunk", "primary", "secondary", "tertiary", "unclassified"}
+MIN_MATCH_CORRELATION = 0.5  # a check point is usable only if both years show the same scene
 
 
 def snap_bounds(bounds: BBox, transform: Any) -> BBox:
@@ -191,7 +193,9 @@ def clip_vectors(cfg: Config) -> dict[str, Path]:
     pins = set(parcels.loc[parcels["in_box"], cfg.fields.parcel_id])
     window = (cfg.permits.window_start, cfg.permits.window_end)
     permits = load_permits(p.permits_csv, aoi, window, cfg, pins=pins)
-    permits.assign(issue_date=permits["issue_date"].astype(str)).to_file(
+    # GeoPackage field names are case-insensitive: keep the parsed date, drop the raw text.
+    out = permits.drop(columns=[cfg.fields.permit_issue_date, "SHAPE"], errors="ignore")
+    out.assign(issue_date=out["issue_date"].astype(str)).to_file(
         p.permits_clipped, layer="permits", driver="GPKG"
     )
 
@@ -202,6 +206,8 @@ def clip_vectors(cfg: Config) -> dict[str, Path]:
     log.info("overture buildings in box: %d", len(ov))
 
     limits = gpd.read_file(p.corporate_limits).to_crs(crs)
+    if "EFFECTIVE" in limits:
+        limits = limits[limits["EFFECTIVE"].astype(str).str.upper() != "NO"]
     limits["geometry"] = limits.geometry.make_valid()
     limits.clip(box(*aoi)).to_file(p.corporate_limits_clipped, layer="limits", driver="GPKG")
     shares = jurisdiction_shares(limits, aoi)
@@ -242,41 +248,49 @@ def download_roads(bbox_wgs84: BBox, out: Path) -> Path:
     return out
 
 
-def find_intersections(roads: gpd.GeoDataFrame, aoi: BBox, n: int) -> gpd.GeoDataFrame:
-    """Pick ``n`` well-spread road intersections (3+ segment ends meeting) inside the box.
+def find_intersections(
+    roads: gpd.GeoDataFrame, aoi: BBox, n: int | None = None
+) -> gpd.GeoDataFrame:
+    """Order road intersections inside the box by farthest-point sampling.
+
+    An intersection is a node where 3+ segment ends meet and at least 2 of them belong to
+    an established road class (:data:`STABLE_ROAD_CLASSES`). New subdivision streets are
+    mostly ``residential``/``service``, so this keeps points that existed in both years.
 
     Args:
-        roads: Road line segments in the working CRS.
+        roads: Road line segments in the working CRS (optional ``class`` column).
         aoi: Study box in the working CRS.
-        n: Number of points (``change.offset_check_points``).
+        n: Number of points to return; None returns every candidate in spread order.
 
     Returns:
-        Points with ``point_id``, spread by farthest-point sampling from the box center.
+        Points with ``point_id``, the first ones spread out from the box center.
     """
-    ends: list[tuple[float, float]] = []
-    for geom in roads.geometry:
+    ends: list[tuple[tuple[int, int], bool]] = []
+    classes = roads["class"] if "class" in roads else pd.Series("primary", index=roads.index)
+    for geom, cls in zip(roads.geometry, classes, strict=True):
+        stable = str(cls) in STABLE_ROAD_CLASSES
         for line in getattr(geom, "geoms", [geom]):
             cs = list(line.coords)
-            ends += [
-                (round(cs[0][0]), round(cs[0][1])),
-                (round(cs[-1][0]), round(cs[-1][1])),
-            ]
-    counts = pd.Series(ends).value_counts()
-    nodes = [Point(xy) for xy, c in counts.items() if c >= 3]
+            for x, y in (cs[0][:2], cs[-1][:2]):
+                ends.append(((round(x), round(y)), stable))
+    df = pd.DataFrame(ends, columns=["xy", "stable"])
+    agg = df.groupby("xy")["stable"].agg(["size", "sum"])
+    nodes = [Point(xy) for xy, r in agg.iterrows() if r["size"] >= 3 and r["sum"] >= 2]
     inner = box(*aoi).buffer(-EDGE_MARGIN_M)
     cand = [pt for pt in nodes if inner.contains(pt)]
-    if len(cand) < n:
+    want = len(cand) if n is None else n
+    if len(cand) < want or not cand:
         raise ValueError(f"only {len(cand)} road intersections found inside the box")
     xy = np.array([(pt.x, pt.y) for pt in cand])
     center = np.array(inner.centroid.coords[0])
     chosen = [int(np.argmin(((xy - center) ** 2).sum(1)))]
     dist = ((xy - xy[chosen[0]]) ** 2).sum(1)
-    while len(chosen) < n:
+    while len(chosen) < want:
         nxt = int(np.argmax(dist))
         chosen.append(nxt)
         dist = np.minimum(dist, ((xy - xy[nxt]) ** 2).sum(1))
     return gpd.GeoDataFrame(
-        {"point_id": [f"X{i + 1}" for i in range(n)]},
+        {"point_id": [f"X{i + 1}" for i in range(want)]},
         geometry=[cand[i] for i in chosen],
         crs=roads.crs,
     )
@@ -327,6 +341,26 @@ def phase_correlation_shift(
         return float(dy), float(dx)
 
 
+def chip_shift(before: Path, after: Path, pt: Point, res: float) -> dict[str, float]:
+    """Estimate the offset at one point and how well the two chips match after shifting."""
+    a = _gray_chip(before, pt, CHIP_HALF_M)
+    b = _gray_chip(after, pt, CHIP_HALF_M)
+    h, w = min(a.shape[0], b.shape[0]), min(a.shape[1], b.shape[1])
+    a, b = a[:h, :w], b[:h, :w]
+    dy, dx = phase_correlation_shift(a, b)
+    iy, ix = round(dy), round(dx)
+    bs = np.roll(b, (iy, ix), axis=(0, 1))
+    m = max(abs(iy), abs(ix)) + 1
+    corr = float(np.corrcoef(a[m:-m, m:-m].ravel(), bs[m:-m, m:-m].ravel())[0, 1])
+    dx_m, dy_m = dx * res, -dy * res
+    return {
+        "dx_m": round(dx_m, 2),
+        "dy_m": round(dy_m, 2),
+        "offset_m": round(math.hypot(dx_m, dy_m), 2),
+        "correlation": round(corr, 3),
+    }
+
+
 def measure_offset(before: Path, after: Path, points: gpd.GeoDataFrame) -> pd.DataFrame:
     """Automatically estimate the Before/After offset at each check point.
 
@@ -339,30 +373,36 @@ def measure_offset(before: Path, after: Path, points: gpd.GeoDataFrame) -> pd.Da
         points: Check points from :func:`find_intersections`.
 
     Returns:
-        One row per point with ``dx_m``, ``dy_m`` and ``offset_m``.
+        One row per point with ``dx_m``, ``dy_m``, ``offset_m`` and ``correlation``.
     """
     import rasterio
 
     with rasterio.open(before) as src:
         res = src.res[0]
-    rows = []
-    for pid, pt in zip(points["point_id"], points.geometry, strict=True):
-        a = _gray_chip(before, pt, CHIP_HALF_M)
-        b = _gray_chip(after, pt, CHIP_HALF_M)
-        h, w = min(a.shape[0], b.shape[0]), min(a.shape[1], b.shape[1])
-        dy, dx = phase_correlation_shift(a[:h, :w], b[:h, :w])
-        dx_m, dy_m = dx * res, -dy * res
-        rows.append(
-            {
-                "point_id": pid,
-                "x": pt.x,
-                "y": pt.y,
-                "dx_m": round(dx_m, 2),
-                "dy_m": round(dy_m, 2),
-                "offset_m": round(math.hypot(dx_m, dy_m), 2),
-            }
-        )
+    rows = [
+        {"point_id": pid, "x": pt.x, "y": pt.y, **chip_shift(before, after, pt, res)}
+        for pid, pt in zip(points["point_id"], points.geometry, strict=True)
+    ]
     return pd.DataFrame(rows)
+
+
+def pick_check_points(
+    before: Path, after: Path, candidates: gpd.GeoDataFrame, n: int
+) -> gpd.GeoDataFrame:
+    """Keep the first ``n`` spread-ordered candidates whose two chips really match."""
+    scored = measure_offset(before, after, candidates)
+    ok = scored[scored["correlation"] >= MIN_MATCH_CORRELATION].head(n)
+    if len(ok) < n:
+        raise ValueError(f"only {len(ok)} intersections look the same in both years")
+    log.info(
+        "check points: %d of %d candidates tested, kept %s",
+        len(scored),
+        len(candidates),
+        ok["point_id"].tolist(),
+    )
+    pts = candidates.set_index("point_id").loc[ok["point_id"]].reset_index()
+    pts["point_id"] = [f"X{i + 1}" for i in range(n)]
+    return pts
 
 
 def tolerance_from_offset(max_offset_m: float, cfg: Config) -> float:
@@ -421,7 +461,9 @@ def offset_check(cfg: Config, *, force: bool = False) -> dict[str, Any]:
     else:
         roads = gpd.read_parquet(download_roads(cfg.aoi.bbox_wgs84, p.overture_roads))
         roads = roads.to_crs(cfg.aoi.working_crs)
-        points = find_intersections(roads, cfg.aoi.bbox_utm17n, cfg.change.offset_check_points)
+        cand = find_intersections(roads, cfg.aoi.bbox_utm17n)
+        n = cfg.change.offset_check_points
+        points = pick_check_points(p.naip_before, p.naip_after_aligned, cand.head(60), n)
         p.offset_dir.mkdir(parents=True, exist_ok=True)
         points.to_file(pts_path, layer="points", driver="GPKG")
         write_offset_chips(p.naip_before, p.naip_after_aligned, points, p.offset_dir)

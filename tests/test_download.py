@@ -59,6 +59,7 @@ def test_load_parcels_drops_private_columns_and_reprojects(parcel_zip: Path, cfg
     assert not {"OWNER", "ADDR1", "ADDR2", "ADDR3"} & set(gdf.columns)
     assert sorted(gdf["PIN_NUM"]) == ["1111111111", "2222222222"]
     assert "CITY_DECODE" in gdf.columns  # restored from the shapefile's CITY_DECOD
+    assert "BLDG_VAL" in gdf.columns
     assert gdf.is_valid.all()
     inside = gdf.set_index("PIN_NUM")
     assert bool(inside.loc["1111111111", "in_box"]) is True
@@ -165,3 +166,19 @@ def test_download_hub_file_skips_existing(tmp_path: Path) -> None:
     # Would raise on the blocked host if it tried to fetch.
     assert download_hub_file("https://maps.wake.gov/x", out) == out
     assert out.read_text() == "cached"
+
+
+def test_restore_names_skips_ambiguous() -> None:
+    from parcelwatch.download import restore_shapefile_names
+
+    cols = ["PIN_NUM", "CITY_DECOD", "LAND_CLASS", "LAND_CLA_1", "TOTAL_VALU"]
+    wanted = ["PIN_NUM", "CITY_DECODE", "LAND_CLASS_DECODE", "TOTAL_VALUE_ASSD"]
+    assert restore_shapefile_names(cols, wanted) == {
+        "CITY_DECOD": "CITY_DECODE",
+        "TOTAL_VALU": "TOTAL_VALUE_ASSD",
+    }
+
+
+def test_load_parcels_reads_only_allowed_fields(parcel_zip: Path, cfg: Config) -> None:
+    gdf = load_parcels(parcel_zip, cfg.aoi.bbox_utm17n, cfg)
+    assert set(gdf.columns) <= {"PIN_NUM", "BLDG_VAL", "CITY_DECODE", "geometry", "in_box"}

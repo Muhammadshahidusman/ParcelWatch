@@ -1,0 +1,101 @@
+{
+  "source": "auto_phase_correlation",
+  "provisional": true,
+  "max_offset_m": 4.44,
+  "match_tolerance_m": 5.44,
+  "rule": "tolerance = clamp(max_measured_offset_m + 1.0, 3.0, 6.0)",
+  "points": [
+    {
+      "point_id": "X1",
+      "x": 730646.0,
+      "y": 3959832.0,
+      "dx_m": 0.48,
+      "dy_m": 0.06,
+      "offset_m": 0.48,
+      "correlation": 0.784
+    },
+    {
+      "point_id": "X2",
+      "x": 728548.0,
+      "y": 3957932.0,
+      "dx_m": 0.96,
+      "dy_m": 0.3,
+      "offset_m": 1.01,
+      "correlation": 0.783
+    },
+    {
+      "point_id": "X3",
+      "x": 731111.0,
+      "y": 3957807.0,
+      "dx_m": 1.5,
+      "dy_m": -0.0,
+      "offset_m": 1.5,
+      "correlation": 0.641
+    },
+    {
+      "point_id": "X4",
+      "x": 729425.0,
+      "y": 3959008.0,
+      "dx_m": 0.96,
+      "dy_m": 0.12,
+      "offset_m": 0.97,
+      "correlation": 0.849
+    },
+    {
+      "point_id": "X5",
+      "x": 729774.0,
+      "y": 3960726.0,
+      "dx_m": 4.44,
+      "dy_m": 0.18,
+      "offset_m": 4.44,
+      "correlation": 0.587
+    }
+  ],
+  "auto_estimate": [
+    {
+      "point_id": "X1",
+      "x": 730646.0,
+      "y": 3959832.0,
+      "dx_m": 0.48,
+      "dy_m": 0.06,
+      "offset_m": 0.48,
+      "correlation": 0.784
+    },
+    {
+      "point_id": "X2",
+      "x": 728548.0,
+      "y": 3957932.0,
+      "dx_m": 0.96,
+      "dy_m": 0.3,
+      "offset_m": 1.01,
+      "correlation": 0.783
+    },
+    {
+      "point_id": "X3",
+      "x": 731111.0,
+      "y": 3957807.0,
+      "dx_m": 1.5,
+      "dy_m": -0.0,
+      "offset_m": 1.5,
+      "correlation": 0.641
+    },
+    {
+      "point_id": "X4",
+      "x": 729425.0,
+      "y": 3959008.0,
+      "dx_m": 0.96,
+      "dy_m": 0.12,
+      "offset_m": 0.97,
+      "correlation": 0.849
+    },
+    {
+      "point_id": "X5",
+      "x": 729774.0,
+      "y": 3960726.0,
+      "dx_m": 4.44,
+      "dy_m": 0.18,
+      "offset_m": 4.44,
+      "correlation": 0.587
+    }
+  ]
+}

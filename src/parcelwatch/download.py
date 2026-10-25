@@ -200,29 +200,40 @@ def _parcel_fields(cfg: Config) -> list[str]:
 def restore_shapefile_names(columns: list[str], wanted: list[str]) -> dict[str, str]:
     """Map shapefile-truncated column names (10 chars) back to the full config names.
 
+    A truncated name is only restored when it is unambiguous: no other wanted field shares
+    the same 10-character prefix, and GDAL did not launder a sibling into ``XXXXXXXX_1``
+    (which means the short name may be a real field of its own, e.g. ``LAND_CLASS``).
+
     Args:
         columns: Column names as read.
         wanted: Full field names from the config.
 
     Returns:
-        A rename map ``{truncated: full}`` for names that were cut and are unambiguous.
+        A rename map ``{truncated: full}``.
     """
     present = set(columns)
     renames: dict[str, str] = {}
     for full in wanted:
         short = full[:SHAPEFILE_FIELD_LEN]
-        unique = sum(w[:SHAPEFILE_FIELD_LEN] == short for w in wanted) == 1
-        if full not in present and short in present and short != full and unique:
-            renames[short] = full
+        if full in present or short not in present or short == full:
+            continue
+        shared = sum(w[:SHAPEFILE_FIELD_LEN] == short for w in wanted) > 1
+        laundered = f"{short[: SHAPEFILE_FIELD_LEN - 2]}_1" in present
+        if shared or laundered:
+            log.warning("field %s is ambiguous in the shapefile (%s), not mapped", full, short)
+            continue
+        renames[short] = full
     return renames
 
 
 def load_parcels(zip_path: Path, bbox: BBox, cfg: Config) -> gpd.GeoDataFrame:
     """Read the county parcels for the box without ever loading owner or address columns.
 
-    The schema is read first and the ``never_load`` fields are excluded from the read
-    itself. Parcels that intersect the box are kept whole, reprojected to the working CRS
-    and made valid. ``in_box`` marks parcels whose representative point is inside the box.
+    Only the parcel fields named in the config are read (an allow-list), so owner, mailing
+    address and site address columns never enter memory; ``never_load`` is checked again
+    after the read. Parcels that intersect the box are kept whole, reprojected to the
+    working CRS and made valid. ``in_box`` marks parcels whose representative point is
+    inside the box.
 
     Args:
         zip_path: Full-county parcel shapefile zip (or any OGR-readable path).
@@ -235,14 +246,17 @@ def load_parcels(zip_path: Path, bbox: BBox, cfg: Config) -> gpd.GeoDataFrame:
     src = _vsizip(zip_path) if zip_path.suffix.lower() == ".zip" else str(zip_path)
     info = pyogrio.read_info(src)
     banned = {f.upper() for f in cfg.fields.never_load}
-    columns = [f for f in info["fields"] if f.upper() not in banned]
+    fields = list(info["fields"])
+    renames = restore_shapefile_names(fields, _parcel_fields(cfg))
+    columns = [c for c in fields if c in renames or c in _parcel_fields(cfg)]
+    columns = [c for c in columns if c.upper() not in banned]
     src_crs = info["crs"] or cfg.vectors.parcels_source_crs
     src_bbox = transform_bbox(bbox, cfg.aoi.working_crs, src_crs)
     gdf = gpd.read_file(src, columns=columns, bbox=src_bbox, engine="pyogrio")
     if gdf.crs is None:
         gdf = gdf.set_crs(cfg.vectors.parcels_source_crs)
     assert not banned & {c.upper() for c in gdf.columns}, "owner/address column leaked"
-    gdf = gdf.rename(columns=restore_shapefile_names(list(gdf.columns), _parcel_fields(cfg)))
+    gdf = gdf.rename(columns=renames)
     gdf = gdf.to_crs(cfg.aoi.working_crs)
     gdf["geometry"] = gdf.geometry.make_valid()
     gdf = gdf[~gdf.geometry.is_empty & gdf.geometry.notna()]
@@ -289,7 +303,25 @@ def load_permits(
         Permit points in the working CRS (geometry is None where coordinates are missing).
     """
     f = cfg.fields
-    df = pd.read_csv(csv_path, dtype={f.permit_parcel_id: str, f.permit_id: str}, low_memory=False)
+    # Allow-list: only the permit fields the pipeline uses (no mailing address or contractor).
+    wanted = [
+        f.permit_id,
+        f.permit_parcel_id,
+        f.permit_issue_date,
+        f.permit_type,
+        f.permit_work_class,
+        f.permit_square_feet,
+        f.permit_valuation,
+        f.permit_district,
+        f.permit_x,
+        f.permit_y,
+    ]
+    df = pd.read_csv(
+        csv_path,
+        dtype={f.permit_parcel_id: str, f.permit_id: str},
+        usecols=lambda c: c in wanted,
+        low_memory=False,
+    )
     df["issue_date"] = parse_issue_dates(df[f.permit_issue_date])
     start, end = window
     in_window = df["issue_date"].notna() & (df["issue_date"] >= start) & (df["issue_date"] <= end)
