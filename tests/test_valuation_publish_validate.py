@@ -228,3 +228,39 @@ def test_compute_metrics_for_another_models_flags(cfg: Config) -> None:
     # Model v1 flags a and c only.
     m = compute_metrics(sheet, cfg, flagged_ids={"a", "c"})
     assert (m.tp, m.fp, m.fn, m.tn) == (2, 0, 0, 2)
+
+
+def test_choose_labels_prefers_owner(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    from parcelwatch.validate import CLAUDE_LABELS, OWNER_LABELS, choose_labels
+
+    sheet = pd.DataFrame(
+        {
+            "sample_id": ["S001", "S002"],
+            "parcel_id": ["a", "b"],
+            "group": ["flagged", "unchanged"],
+            "label": [None, None],
+            "false_alarm_cause": [None, None],
+            "note": [None, None],
+        }
+    )
+    with pytest.raises(ValueError):
+        choose_labels(sheet, tmp_path)
+    pd.DataFrame(
+        {
+            "sample_id": ["S001", "S002"],
+            "label": ["no_change", "no_change"],
+            "note": ["[claude]", "[claude]"],
+        }
+    ).to_csv(tmp_path / CLAUDE_LABELS, index=False)
+    out, who = choose_labels(sheet, tmp_path)
+    assert who == "claude_provisional" and out["label"].tolist() == ["no_change"] * 2
+    # A half-done owner file is ignored; a complete one wins.
+    pd.DataFrame({"sample_id": ["S001"], "label": ["new"]}).to_csv(
+        tmp_path / OWNER_LABELS, index=False
+    )
+    assert choose_labels(sheet, tmp_path)[1] == "claude_provisional"
+    pd.DataFrame({"sample_id": ["S001", "S002"], "label": ["new", "no_change"]}).to_csv(
+        tmp_path / OWNER_LABELS, index=False
+    )
+    out, who = choose_labels(sheet, tmp_path)
+    assert who == "owner" and out["label"].tolist() == ["new", "no_change"]

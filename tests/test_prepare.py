@@ -119,3 +119,19 @@ def test_mosaic_and_align(tmp_path: Path, cfg: Config) -> None:
     aligned = align_to(out, raw / "b.tif", tmp_path / "after.tif")
     with rasterio.open(aligned) as src:
         assert src.shape == ref_shape and src.transform == ref_transform
+
+
+def test_drop_unlabeled_tiles(tmp_path: Path, cfg: Config) -> None:
+    from parcelwatch.detect import drop_unlabeled_tiles
+
+    x0, _, _, y1 = cfg.aoi.bbox_utm17n
+    for sub in ("images", "labels"):
+        (tmp_path / sub).mkdir()
+        _tile(tmp_path / sub / "a.tif", x0, y1, 1, cfg, n=100)  # 60 x 60 m at the corner
+        _tile(tmp_path / sub / "b.tif", x0 + 1000, y1, 1, cfg, n=100)
+    unlabeled = gpd.GeoDataFrame(
+        geometry=[box(x0 + 10, y1 - 20, x0 + 20, y1 - 10)], crs=cfg.aoi.working_crs
+    )
+    assert drop_unlabeled_tiles(tmp_path, unlabeled) == 1
+    assert [f.name for f in (tmp_path / "images").iterdir()] == ["b.tif"]
+    assert [f.name for f in (tmp_path / "labels").iterdir()] == ["b.tif"]

@@ -231,3 +231,21 @@ Fixed now so a future build doesn't have to re-decide. Framework: FastAPI. Read-
 - **Invariants checked at runtime** (fail loudly): all layers in EPSG:26917 before geometry math; no invalid geometries after `make_valid`; `added_m2 ≥ 0`; every changed building maps to exactly one parcel or is logged as orphaned.
 - **Logging:** standard `logging`, INFO by default, one line per step with counts and duration.
 - **Run manifest:** `results/run_manifest.json` stores config hash, git commit, NAIP item IDs and dates, model version and timestamps, so any number in the case study can be traced back.
+
+## 12. Implementation notes (added during the build, 2026-10-26)
+
+These refine the plan above without changing any locked decision. Each is also in the CLAUDE.md Decision Log.
+
+| Topic | What the code does |
+| --- | --- |
+| NAIP download | Windowed reads of each Cloud-Optimized GeoTIFF covering the box plus 100 m, pixels copied unchanged. 4 tiles per year run in parallel |
+| Mosaic grid | The first Before tile's native 0.6 m grid, snapped around the box: 8,149 × 8,539 px. After is resampled (bilinear) onto exactly that grid |
+| Parcel read | Allow-list of the config's parcel fields only. Shapefile names cut to 10 characters are mapped back unless ambiguous (`LAND_CLASS` vs `LAND_CLASS_DECODE` is skipped with a warning) |
+| Permit read | Allow-list of the config's permit fields only (no mailing address or contractor). Kept if the point is in the box or the PIN matches a box parcel |
+| Analysis parcels | Whole parcels intersecting the box are stored; `in_box` (representative point inside the box) selects the parcels used for changes, sampling, value per sq ft and hexes |
+| Offset check | Candidate points are road intersections with 2+ segment ends on established road classes; the first 5 in farthest-point order whose 2018/2022 chips correlate ≥ 0.5 are used. `results/offset_measurements.csv` (owner) overrides the automatic estimate |
+| Detection | v0 writes a mask GeoTIFF with the config thresholds (`min_object_area` = 10 m² in pixels), then `geoai.orthogonalize(epsilon=1.0)`. v1 uses `export_geotiff_tiles` → `train_MaskRCNN_model` → `object_detection` → the same orthogonalize step |
+| Per-model outputs | `results/building_changes_{model}.gpkg` and `parcel_changes_{model}.gpkg`; `report` copies the model in use to the contract names `building_changes.gpkg` and `parcel_changes.gpkg` |
+| Validation | The sample is shuffled and the HTML helper hides the group, so labeling is blind. Labels are ground truth per parcel, so v1 is scored on the same 200 parcels using its own flags |
+| Hexes | `added_sqft` is added area on flagged parcels, rounded to 100. GeoJSON is always written (audited source); PMTiles only when tippecanoe exists |
+| Web imagery | Planetary Computer item tile API, one raster source per NAIP item |

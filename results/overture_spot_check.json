@@ -1,0 +1,16 @@
+{
+  "n_checked": 50,
+  "good": 45,
+  "issues": {
+    "canopy_occlusion": [
+      "L40",
+      "L44",
+      "L47"
+    ],
+    "shift_1_2m": [
+      "L19",
+      "L26"
+    ]
+  },
+  "coverage_built_parcels_le_2022": 0.912
+}

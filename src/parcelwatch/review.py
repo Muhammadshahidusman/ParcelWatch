@@ -252,3 +252,39 @@ Flags are leads from aerial imagery, not findings.</span></header><main><table><
     out = p.results / "review.html"
     out.write_text(page, "utf-8")
     return out
+
+
+def label_spot_check(cfg: Config, n: int | None = None, cols: int = 10) -> Path:
+    """Draw ``n`` random Overture buildings on the After image as one contact sheet.
+
+    Used to spot-check training labels before v1 training (``model.v1.label_spot_check``).
+
+    Args:
+        cfg: Loaded config.
+        n: Number of labels (defaults to the config value).
+        cols: Chips per row.
+
+    Returns:
+        Path of ``results/figures/overture_spot_check.png``.
+    """
+    from PIL import Image, ImageDraw
+
+    p = Paths(cfg.root)
+    n = n or cfg.model.v1.label_spot_check
+    ov = gpd.read_file(p.overture_clipped)
+    pick = ov.sample(n=min(n, len(ov)), random_state=cfg.model.seed).reset_index(drop=True)
+    size = 128
+    rows = (len(pick) + cols - 1) // cols
+    sheet = Image.new("RGB", (cols * size, rows * (size + 14)), "white")
+    tmp = p.results / "chips" / "spot"
+    for i, geom in enumerate(pick.geometry):
+        f = render_chip(p.naip_after_aligned, geom, tmp / f"L{i + 1:02d}.png", px=size)
+        r, c = divmod(i, cols)
+        sheet.paste(Image.open(f), (c * size, r * (size + 14) + 14))
+        ImageDraw.Draw(sheet).text(
+            (c * size + 3, r * (size + 14) + 1), f"L{i + 1:02d}", fill="black"
+        )
+    out = p.results / "figures" / "overture_spot_check.png"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    sheet.save(out)
+    return out

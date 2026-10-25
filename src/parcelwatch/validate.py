@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import asdict, dataclass, field
+from pathlib import Path
 from typing import Any
 
 import geopandas as gpd
@@ -190,8 +191,8 @@ def run(cfg: Config, *, make_sheet: bool, score: bool, force: bool = False) -> N
         write_labeling_helper(cfg, pd.read_csv(p.validation_sheet, dtype={"parcel_id": str}))
     if score:
         sheet = pd.read_csv(p.validation_sheet, dtype={"parcel_id": str})
-        sheet = merge_helper_labels(sheet, p.results / "validation_labels.csv")
-        sheet.to_csv(p.validation_sheet, index=False)
+        sheet, who = choose_labels(sheet, p.results)
+        log.info("scoring with labels from: %s", who)
         result: dict[str, dict[str, Any]] = {}
         for m in ("v0", "v1"):
             path = p.parcel_changes_for(m)
@@ -208,7 +209,7 @@ def run(cfg: Config, *, make_sheet: bool, score: bool, force: bool = False) -> N
             **result[chosen],
             "model": chosen,
             "by_model": result,
-            "labeled_by": labeled_by(sheet),
+            "labeled_by": who,
         }
         p.metrics.write_text(json.dumps(metrics, indent=2), "utf-8")
         p.model_selection.write_text(
@@ -223,22 +224,47 @@ def run(cfg: Config, *, make_sheet: bool, score: bool, force: bool = False) -> N
         )
 
 
-def labeled_by(sheet: pd.DataFrame) -> str:
-    """Who labeled the sheet: ``owner`` unless every note marks a provisional label."""
-    notes = sheet["note"].fillna("").astype(str)
-    return "claude_provisional" if notes.str.startswith("[claude]").all() else "owner"
+OWNER_LABELS = "validation_labels.csv"  # exported by the HTML helper
+CLAUDE_LABELS = "validation_labels_claude.csv"  # provisional, replaced by the owner's
 
 
-def merge_helper_labels(sheet: pd.DataFrame, labels_csv: object) -> pd.DataFrame:
-    """Copy labels exported by the HTML helper (``validation_labels.csv``) into the sheet."""
-    from pathlib import Path
+def _complete(labels: pd.DataFrame, n: int) -> bool:
+    return len(labels) >= n and labels["label"].notna().all()
 
-    path = Path(str(labels_csv))
-    if not path.exists():
-        return sheet
-    lab = pd.read_csv(path).set_index("sample_id")
+
+def apply_labels(sheet: pd.DataFrame, labels: pd.DataFrame) -> pd.DataFrame:
+    """Replace the sheet's label, cause and note columns with ``labels`` by ``sample_id``."""
+    lab = labels.set_index("sample_id")
     out = sheet.set_index("sample_id")
     for col in ("label", "false_alarm_cause", "note"):
-        if col in lab:
-            out[col] = lab[col].reindex(out.index).combine_first(out[col])
+        out[col] = lab[col].reindex(out.index) if col in lab else pd.NA
     return out.reset_index()
+
+
+def choose_labels(sheet: pd.DataFrame, results: Path) -> tuple[pd.DataFrame, str]:
+    """Pick the label source: owner helper export, then labels typed into the sheet,
+    then Claude's provisional labels. The owner's labels always win.
+
+    Returns:
+        ``(labeled_sheet, source)`` with source ``owner`` or ``claude_provisional``.
+
+    Raises:
+        ValueError: If no complete set of labels exists.
+    """
+    n = len(sheet)
+    owner = results / OWNER_LABELS
+    if owner.exists():
+        lab = pd.read_csv(owner)
+        if _complete(lab, n):
+            return apply_labels(sheet, lab), "owner"
+        log.warning(
+            "%s has %d of %d labels, not used yet", owner.name, int(lab["label"].notna().sum()), n
+        )
+    if _complete(sheet, n):
+        return sheet, "owner"
+    claude = results / CLAUDE_LABELS
+    if claude.exists():
+        lab = pd.read_csv(claude)
+        if _complete(lab, n):
+            return apply_labels(sheet, lab), "claude_provisional"
+    raise ValueError("no complete set of validation labels yet")

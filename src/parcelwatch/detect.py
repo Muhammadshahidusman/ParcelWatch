@@ -101,7 +101,7 @@ def make_training_tiles(image: Path, labels: Path, out_dir: Path, cfg: Config) -
 
     v1 = cfg.model.v1
     lab = gpd.read_file(labels)
-    lab = gpd.GeoDataFrame({"class": 1}, geometry=lab.geometry, crs=lab.crs)
+    lab = lab[["geometry"]].assign(**{"class": 1})
     lab_path = out_dir / "labels.geojson"
     out_dir.mkdir(parents=True, exist_ok=True)
     lab.to_crs(cfg.aoi.working_crs).to_file(lab_path, driver="GeoJSON")
@@ -115,15 +115,52 @@ def make_training_tiles(image: Path, labels: Path, out_dir: Path, cfg: Config) -
         buffer_radius=0,
         quiet=True,
     )
+    dropped = drop_unlabeled_tiles(out_dir, unlabeled_parcels(cfg))
     n = len(list((out_dir / "images").glob("*.tif")))
     log.info(
-        "training tiles: %d (%d px, stride %d) -> %s",
+        "training tiles: %d kept, %d dropped for missing labels (%d px, stride %d)",
         n,
+        dropped,
         v1.tile_size,
         v1.stride,
-        out_dir,
     )
     return out_dir
+
+
+def unlabeled_parcels(cfg: Config) -> gpd.GeoDataFrame:
+    """Box parcels with a house built by the After year but no Overture footprint.
+
+    Overture misses many 2021-22 builds; tiles over these parcels would teach the model
+    that new houses are background, so they are left out of training.
+    """
+    p = Paths(cfg.root)
+    f = cfg.fields
+    parcels = gpd.read_file(p.parcels_clipped)
+    parcels = parcels[parcels["in_box"]]
+    built = parcels[
+        (parcels[f.heated_area_sqft] > 0) & (parcels[f.year_built] <= cfg.imagery.after.year)
+    ]
+    ov = gpd.read_file(p.overture_clipped)
+    pts = gpd.GeoDataFrame(geometry=ov.representative_point(), crs=ov.crs)
+    hit = gpd.sjoin(pts, built[[f.parcel_id, "geometry"]], predicate="within")[f.parcel_id]
+    return built[~built[f.parcel_id].isin(hit)]
+
+
+def drop_unlabeled_tiles(tiles_dir: Path, unlabeled: gpd.GeoDataFrame) -> int:
+    """Delete image/label tile pairs that overlap any unlabeled parcel; return the count."""
+    import rasterio
+    from shapely.geometry import box
+
+    sindex = unlabeled.sindex
+    dropped = 0
+    for img in sorted((tiles_dir / "images").glob("*.tif")):
+        with rasterio.open(img) as src:
+            tile = box(*src.bounds)
+        if len(sindex.query(tile, predicate="intersects")):
+            img.unlink()
+            (tiles_dir / "labels" / img.name).unlink(missing_ok=True)
+            dropped += 1
+    return dropped
 
 
 def train_v1(tiles_dir: Path, out_dir: Path, cfg: Config, batch_size: int | None = None) -> Path:
