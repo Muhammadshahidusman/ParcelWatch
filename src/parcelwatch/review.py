@@ -228,7 +228,10 @@ def write_review_table(cfg: Config, parcel_money: gpd.GeoDataFrame, top: int = 5
     for _, r in flagged.iterrows():
         kinds = [(k, int(r[f"n_{k}"])) for k in ("new", "expanded", "demolished") if r[f"n_{k}"]]
         glyph = {"new": "■", "expanded": "◧", "demolished": "□"}
-        change = ", ".join(f"{glyph[k]} {n} {k}" for k, n in kinds)
+        color = {"new": "#D55E00", "expanded": "#E69F00", "demolished": "#0072B2"}  # Okabe-Ito
+        change = ", ".join(
+            f"<span style='color:{color[k]}'>{glyph[k]}</span> {n} {k}" for k, n in kinds
+        )
         rows.append(
             f"<tr><td class='mono'>{int(r['rank'])}</td><td class='mono'>{html.escape(str(r['parcel_id']))}"
             f"</td><td>{change}</td><td class='num mono'>{r['added_sqft']:,.0f}</td>"
