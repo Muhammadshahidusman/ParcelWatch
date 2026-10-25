@@ -1,6 +1,6 @@
 # Data and models (TRD section 8): never committed
-data/
-models/
+/data/
+/models/
 *.pth
 *.pt
 *.ckpt
