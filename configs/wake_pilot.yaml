@@ -1,0 +1,151 @@
+# ParcelWatch pilot configuration. Single source of truth for parameters.
+# Every value below was verified on 2026-10-25. Changing one? Log it in CLAUDE.md section 8.
+
+project:
+  name: ParcelWatch
+  version: 0.1.0
+
+aoi:
+  county: Wake County, NC
+  name: East Wake (between Knightdale and Wendell)
+  bbox_wgs84: [-78.4766, 35.7337, -78.4211, 35.7787]   # min_lon, min_lat, max_lon, max_lat
+  bbox_utm17n: [728214, 3957349, 733103, 3962472]      # EPSG:26917, meters
+  area_km2: 25.0
+  jurisdiction_share_pct: {unincorporated: 79, wendell: 13, knightdale: 8}   # all inspected by Wake County
+  working_crs: EPSG:26917
+  web_crs: EPSG:4326
+
+imagery:
+  source: planetary_computer
+  stac_url: https://planetarycomputer.microsoft.com/api/stac/v1
+  collection: naip
+  gsd_m: 0.6
+  bands: [red, green, blue, nir]
+  before:
+    year: 2018
+    date: 2018-10-22
+    items:
+      - nc_m_3507813_se_17_060_20181022_20190211
+      - nc_m_3507813_sw_17_060_20181022_20190211
+      - nc_m_3507821_ne_17_060_20181022_20190210
+      - nc_m_3507821_nw_17_060_20181022_20190210
+  after:
+    year: 2022
+    date: 2022-10-06          # latest of the after tiles; used as the permit window end
+    items:
+      - nc_m_3507813_se_17_060_20220927
+      - nc_m_3507813_sw_17_060_20221006
+      - nc_m_3507821_ne_17_060_20220927
+      - nc_m_3507821_nw_17_060_20221006
+
+vectors:
+  # Wake County's own server (maps.wake.gov) refuses connections from Pakistan.
+  # Use the ArcGIS Hub cached full-county downloads, then clip locally.
+  parcels_download: https://hub.arcgis.com/api/download/v1/items/f5ed009c66e844ec82f29064edd95017/shapefile?layers=0
+  parcels_source_crs: EPSG:2264          # NC State Plane, US feet
+  permits_download: https://hub.arcgis.com/api/download/v1/items/6a9651b339b7413d8dc264f9ae1b3f6f/csv?layers=0
+  permits_xy_crs: EPSG:4326              # X = longitude, Y = latitude
+  corporate_limits_download: https://hub.arcgis.com/api/download/v1/items/611072be4a2e47dca6606c9e8bc78f77/geojson?layers=0
+  overture_type: building
+  refresh: never_within_a_run            # download once, keep in data/raw/
+
+fields:   # verified 2026-10-25 from the ArcGIS Hub dataset schemas
+  parcel_id: PIN_NUM
+  real_estate_id: REID
+  building_value: BLDG_VAL
+  land_value: LAND_VAL
+  total_value: TOTAL_VALUE_ASSD
+  heated_area_sqft: HEATEDAREA
+  year_built: YEAR_BUILT
+  city: CITY_DECODE
+  planning_jurisdiction: PLANNING_JURISDICTION
+  land_class: LAND_CLASS_DECODE
+  never_load: [OWNER, ADDR1, ADDR2, ADDR3]   # privacy: drop on read
+  permit_id: PERMIT_NUMBER
+  permit_parcel_id: PIN
+  permit_issue_date: ISSUE_DATE            # format "YYYY/MM/DD 00:00:00+00"
+  permit_type: PERMIT_TYPE
+  permit_work_class: WORK_CLASS
+  permit_square_feet: SQUARE_FEET
+  permit_valuation: VALUATION
+  permit_district: DISTRICT
+  permit_x: X
+  permit_y: Y
+
+permits:
+  window_start: 2017-10-22      # 12 months before the before-image date
+  window_end: 2022-10-06        # after-image date
+  counting_types:               # PERMIT_TYPE values that explain a building change
+    - Residential Building
+    - Residential Accessory Building Structure
+    - Commercial Building
+    - Manufactured Home Permit
+    - Demolition Permit
+  match_by: [spatial, pin]      # either match counts
+
+model:
+  v0:
+    type: geoai_building_footprint_extractor
+    weights: building_footprints_usa.pth
+    input_bands: [red, green, blue]
+    confidence_threshold: 0.5
+    mask_threshold: 0.6
+    orthogonalize_epsilon: 1.0
+  v1:
+    type: maskrcnn
+    num_channels: 4
+    tile_size: 512
+    stride: 256
+    batch_size: 4
+    epochs: 50
+    learning_rate: 0.005
+    val_split: 0.2
+    confidence_threshold: 0.5
+    window_size: 512
+    overlap: 256
+    label_spot_check: 50
+  promote_v1_if: v1 precision >= v0 precision on the same 200-parcel sample
+  seed: 42
+
+change:
+  match_tolerance_m: 3.0          # default; see tolerance_rule
+  tolerance_rule: "tolerance = clamp(max_measured_offset_m + 1.0, 3.0, 6.0)"
+  offset_check_points: 5          # road intersections measured in QGIS
+  min_building_area_m2: 10.0
+  expanded_min_added_m2: 20.0
+  expanded_min_ratio: 1.2
+
+validation:
+  n_flagged: 100
+  n_unchanged: 100
+  random_state: 42
+  labels: [new, expanded, demolished, no_change]
+  false_alarm_causes: [trees, shadow, misalignment, construction_site, trailer_or_vehicle, solar_or_roof_material, other]
+  targets:
+    precision_min: 0.70
+    miss_rate_max: 0.10
+
+valuation:
+  tax_year: 2026                  # bills for fiscal year 2027 (Jul 2026 to Jun 2027)
+  assessment_ratio: 1.0           # North Carolina assesses at 100% of appraised value
+  county_rate_cents_per_100: 53.71
+  municipal_rate_cents_per_100:   # chosen by parcel CITY_DECODE
+    WENDELL: 42.0
+    KNIGHTDALE: 44.0
+    default: 0.0                  # unincorporated
+  include_fire_tax: false         # conservative: fire district tax excluded from headline numbers
+  value_per_sqft_method: median_recent_builds
+  recent_build_years: 5           # YEAR_BUILT >= 2021
+  value_per_sqft_filters: {min_heated_sqft: 600, min_building_value: 1}
+  value_per_sqft_scope: bbox      # parcels inside the study box; if fewer than 30 qualify, use all of Wake County
+  value_per_sqft_min_sample: 30
+  sqft_per_m2: 10.764
+
+privacy:
+  public_aggregation: h3
+  h3_resolution: 9
+  min_parcels_per_hex: 5
+
+output:
+  vector_format: gpkg
+  web_tiles: pmtiles
