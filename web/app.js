@@ -37,13 +37,14 @@
     if (s.est_yearly_tax_usd_adjusted !== null && s.precision !== null) {
       var pct = Math.round(s.precision * 100);
       $("money").textContent = "$" + fmt(s.est_yearly_tax_usd_adjusted) + " / yr";
-      var who = s.validation_status === "owner" ? "hand review" : "provisional review (owner check pending)";
+      var who = { owner: "hand review", claude_accepted: "Claude's review of image chips, accepted by the owner" }[
+        s.validation_status] || "provisional review (owner check pending)";
       $("money-note").innerHTML = "adjusted for " + pct + "% precision " +
         '<span class="info"><button type="button" aria-label="About precision">ⓘ</button>' +
         '<span class="tip" role="tooltip">' + s.validation_tp + " of " + s.validation_n_flagged +
         " flags confirmed by " + who + ". Value per sq ft $" + s.value_per_sqft.toFixed(0) +
         ", tax year " + s.tax_year + " rates, fire tax excluded.</span></span>";
-      if (s.validation_status !== "owner") $("money-note").classList.add("warn");
+      if (s.validation_status === "claude_provisional") $("money-note").classList.add("warn");
     } else {
       $("money").textContent = "Pending validation";
       $("money-note").textContent = "Shown once 200 parcels are hand-checked and precision is measured.";

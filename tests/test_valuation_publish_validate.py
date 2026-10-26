@@ -277,3 +277,26 @@ def test_precision_by_claim() -> None:
         "expanded": {"n": 1, "confirmed": 0},
         "demolished_only": {"n": 1, "confirmed": 0},
     }
+
+
+def test_claude_labels_accepted_by_owner(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    import json as _json
+
+    from parcelwatch.validate import ACCEPTANCE, CLAUDE_LABELS, choose_labels
+
+    sheet = pd.DataFrame(
+        {
+            "sample_id": ["S001"],
+            "parcel_id": ["a"],
+            "group": ["flagged"],
+            "label": [None],
+            "false_alarm_cause": [None],
+            "note": [None],
+        }
+    )
+    pd.DataFrame({"sample_id": ["S001"], "label": ["new"]}).to_csv(
+        tmp_path / CLAUDE_LABELS, index=False
+    )
+    assert choose_labels(sheet, tmp_path)[1] == "claude_provisional"
+    (tmp_path / ACCEPTANCE).write_text(_json.dumps({"labels": {"accepted_by_owner": True}}))
+    assert choose_labels(sheet, tmp_path)[1] == "claude_accepted"

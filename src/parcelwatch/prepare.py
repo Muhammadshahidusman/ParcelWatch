@@ -473,11 +473,15 @@ def offset_check(cfg: Config, *, force: bool = False) -> dict[str, Any]:
             p.offset_measurements, index=False
         )
     owner = _owner_offsets(p.offset_measurements)
+    from parcelwatch.validate import accepted
+
     used, source = (owner, "owner_qgis") if owner is not None else (auto, "auto_phase_correlation")
+    auto_ok = owner is None and accepted(p.results, "offset")
     max_off = float(used["offset_m"].max())
     report = {
         "source": source,
-        "provisional": owner is None,
+        "provisional": owner is None and not auto_ok,
+        "accepted_by_owner": auto_ok,
         "max_offset_m": round(max_off, 2),
         "match_tolerance_m": tolerance_from_offset(max_off, cfg),
         "rule": cfg.change.tolerance_rule,

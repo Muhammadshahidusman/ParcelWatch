@@ -13,14 +13,14 @@
 | Of those, with no building permit in the window | **1,230** |
 | Added area on flagged parcels | 1.62 million sq ft |
 | Estimated missed tax, raw | $1.93 million / yr |
-| Precision of flags (provisional review, see below) | **20%** (20 of 100 confirmed) |
+| Precision of flags (200-parcel check, see below) | **20%** (20 of 100 confirmed) |
 | Estimated missed tax, adjusted for precision | **$385,300 / yr** |
 
-> **Status (2026-10-26):** the full pipeline runs end to end on real data with the pretrained v0 model. The validation labels are a **provisional** review made from image chips; the owner's own hand check replaces them before any number is quoted. The fine-tuned v1 model is ready to train on Colab. See `HANDOFF.md`.
+> **Status (2026-10-26):** the full pipeline runs end to end on real data with the pretrained v0 model. The 200 validation parcels were labeled blind by Claude from before/after image chips and accepted by the owner; that's an image review, not a field check. The fine-tuned v1 model has training tiles and a Colab notebook ready but isn't trained yet, so v0 is the model in use.
 
 ### What the accuracy check says
 
-The 200-parcel check (100 flagged, 100 unchanged, drawn with `random_state=42` and labeled blind) shows where the baseline model works and where it doesn't:
+The 200-parcel check (100 flagged, 100 unchanged, drawn with `random_state=42` and labeled blind from 2018/2022 image chips) shows where the baseline model works and where it doesn't:
 
 | What the model claimed | Flags | Confirmed | Precision |
 | --- | --- | --- | --- |
@@ -33,7 +33,7 @@ New buildings are real a third of the time. "Expanded" flags are almost all outl
 ## How it works
 
 1. **Download.** NAIP 2018 (flown 2018-10-22) and 2022 (2022-09-27 and 2022-10-06) from Microsoft Planetary Computer, read as windows of the cloud-optimized tiles. Wake County parcels, building permits and town limits from ArcGIS Hub. Overture building footprints for training labels. Owner, mailing address and site address columns are never read.
-2. **Prepare.** Both years go onto one 0.6 m grid in NAD83 / UTM 17N. The offset between years is measured at 5 road intersections that exist in both years (provisional automatic estimate: 4.4 m max), giving a 5.4 m match tolerance. The 2018 image is histogram-matched to 2022 as detector input, because the pretrained model found half as many 2018 houses on the hazier original.
+2. **Prepare.** Both years go onto one 0.6 m grid in NAD83 / UTM 17N. The offset between years is measured at 5 road intersections that exist in both years (automatic phase-correlation estimate, accepted by the owner: 4.4 m max), giving a 5.4 m match tolerance. The 2018 image is histogram-matched to 2022 as detector input, because the pretrained model found half as many 2018 houses on the hazier original.
 3. **Detect.** The same model with the same settings on both years: GeoAI's pretrained building extractor (v0), then a 4-band Mask R-CNN fine-tuned on Overture labels (v1). v1 replaces v0 only if it's at least as precise on the same 200 parcels.
 4. **Compare buildings, not pixels.** NAIP is accurate to about ±6 m, so pixel differencing would light up every roof edge. A 2022 building with no 2018 match is new; +20 m² and 1.2× the old area is expanded; a 2018 building with no 2022 match is demolished.
 5. **Check permits.** A changed parcel is permitted if a building-related permit issued between 2017-10-22 and 2022-10-06 sits inside it or carries its parcel number (1,898 such permits in the box).

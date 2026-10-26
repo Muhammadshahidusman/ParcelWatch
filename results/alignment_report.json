@@ -1,6 +1,7 @@
 {
   "source": "auto_phase_correlation",
-  "provisional": true,
+  "provisional": false,
+  "accepted_by_owner": true,
   "max_offset_m": 4.44,
   "match_tolerance_m": 5.44,
   "rule": "tolerance = clamp(max_measured_offset_m + 1.0, 3.0, 6.0)",

@@ -30,7 +30,7 @@
       }
     }
   },
-  "labeled_by": "claude_provisional",
+  "labeled_by": "claude_accepted",
   "precision_by_claim": {
     "new": {
       "n": 56,

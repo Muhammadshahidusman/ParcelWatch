@@ -214,7 +214,14 @@ def run(cfg: Config, *, make_sheet: bool, score: bool, force: bool = False) -> N
         }
         p.metrics.write_text(json.dumps(metrics, indent=2), "utf-8")
         p.model_selection.write_text(
-            json.dumps({"model": chosen, "rule": cfg.model.promote_v1_if}, indent=2),
+            json.dumps(
+                {
+                    "model": chosen,
+                    "rule": cfg.model.promote_v1_if,
+                    "reason": selection_reason(result, chosen),
+                },
+                indent=2,
+            ),
             "utf-8",
         )
         log.info(
@@ -249,7 +256,8 @@ def precision_by_claim(sheet: pd.DataFrame) -> dict[str, dict[str, int]]:
 
 
 OWNER_LABELS = "validation_labels.csv"  # exported by the HTML helper
-CLAUDE_LABELS = "validation_labels_claude.csv"  # provisional, replaced by the owner's
+CLAUDE_LABELS = "validation_labels_claude.csv"  # Claude's review; the owner's labels win
+ACCEPTANCE = "validation_acceptance.json"  # owner's written acceptance of Claude's labels/offset
 
 
 def _complete(labels: pd.DataFrame, n: int) -> bool:
@@ -265,12 +273,21 @@ def apply_labels(sheet: pd.DataFrame, labels: pd.DataFrame) -> pd.DataFrame:
     return out.reset_index()
 
 
+def accepted(results: Path, item: str) -> bool:
+    """True if ``validation_acceptance.json`` records the owner accepting ``item``."""
+    path = results / ACCEPTANCE
+    if not path.exists():
+        return False
+    return bool(json.loads(path.read_text("utf-8")).get(item, {}).get("accepted_by_owner"))
+
+
 def choose_labels(sheet: pd.DataFrame, results: Path) -> tuple[pd.DataFrame, str]:
     """Pick the label source: owner helper export, then labels typed into the sheet,
     then Claude's provisional labels. The owner's labels always win.
 
     Returns:
-        ``(labeled_sheet, source)`` with source ``owner`` or ``claude_provisional``.
+        ``(labeled_sheet, source)`` with source ``owner``, ``claude_accepted`` (owner accepted
+        Claude's labels in ``validation_acceptance.json``) or ``claude_provisional``.
 
     Raises:
         ValueError: If no complete set of labels exists.
@@ -290,5 +307,18 @@ def choose_labels(sheet: pd.DataFrame, results: Path) -> tuple[pd.DataFrame, str
     if claude.exists():
         lab = pd.read_csv(claude)
         if _complete(lab, n):
-            return apply_labels(sheet, lab), "claude_provisional"
+            who = "claude_accepted" if accepted(results, "labels") else "claude_provisional"
+            return apply_labels(sheet, lab), who
     raise ValueError("no complete set of validation labels yet")
+
+
+def selection_reason(result: dict[str, dict[str, Any]], chosen: str) -> str:
+    """Plain-language reason for the model choice (PRD F4: document why v0 is kept)."""
+    if "v1" not in result:
+        return (
+            "v1 not trained yet: it needs a GPU run of notebooks/colab_train_v1.ipynb "
+            "(local Quadro P2000 measured at about 50 h for 50 epochs), so v0 is kept"
+        )
+    v0p, v1p = result["v0"]["precision"], result["v1"]["precision"]
+    verdict = "promoted" if chosen == "v1" else "kept v0"
+    return f"v1 precision {v1p:.2f} vs v0 {v0p:.2f} on the same sample: {verdict}"

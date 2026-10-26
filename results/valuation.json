@@ -13,7 +13,7 @@
   "include_fire_tax": false,
   "tax_year": 2026,
   "formula": "yearly_tax = added_sqft * value_per_sqft * assessment_ratio * rate_cents / 100 / 100; reported = sum(flagged) * precision",
-  "validation": "claude_provisional",
+  "validation": "claude_accepted",
   "n_flagged": 1230,
   "added_sqft_flagged": 1618282.96959454,
   "precision": 0.2,

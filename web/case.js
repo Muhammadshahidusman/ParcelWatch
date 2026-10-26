@@ -4,7 +4,9 @@
   var $ = function (id) { return document.getElementById(id); };
   var fmt = function (n) { return Math.round(n).toLocaleString("en-US"); };
   fetch("data/stats.json").then(function (r) { return r.json(); }).then(function (s) {
-    var provisional = s.validation_status !== "owner";
+    var status = s.validation_status;
+    var reviewer = { owner: "by hand review", claude_accepted: "by Claude's review of image chips" }[status] ||
+      "(provisional review)";
     $("t-flagged").textContent = fmt(s.n_flagged);
     $("lede").textContent = "ParcelWatch compared " + s.before_year + " and " + s.after_year +
       " aerial imagery over " + s.area_km2 + " km² of east Wake County, NC. " + fmt(s.n_flagged) +
@@ -19,13 +21,16 @@
     var pct = Math.round(s.precision * 100);
     $("t-precision").textContent = pct + "%";
     $("t-precision-note").textContent = s.validation_tp + " of " + s.validation_n_flagged +
-      " flags confirmed" + (provisional ? " (provisional review)" : " by hand review");
+      " flags confirmed " + reviewer;
     $("t-tax").textContent = "$" + fmt(s.est_yearly_tax_usd_adjusted);
     $("t-tax-note").textContent = "per year, adjusted for " + pct + "% precision";
     $("acc-text").textContent = s.validation_tp + " of " + s.validation_n_flagged +
       " flags were confirmed as real building change. In the unchanged sample, the miss rate was " +
-      Math.round(s.miss_rate * 100) + "%." + (provisional
-        ? " These labels are a provisional review and are being re-checked by hand." : "");
+      Math.round(s.miss_rate * 100) + "%." + ({
+        claude_accepted: " Labels come from Claude's blind review of before/after image chips, accepted by " +
+          "the owner; they are not a field check.",
+        claude_provisional: " These labels are a provisional review and are being re-checked by hand."
+      }[status] || "");
     $("money-text").textContent = "Value per sq ft: $" + s.value_per_sqft.toFixed(2) +
       ". Tax year " + s.tax_year + " rates. Estimated missed tax: $" +
       fmt(s.est_yearly_tax_usd_adjusted) + " per year after multiplying by " + pct +

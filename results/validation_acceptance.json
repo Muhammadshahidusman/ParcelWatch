@@ -1,0 +1,14 @@
+{
+  "date": "2026-10-26",
+  "labels": {
+    "accepted_by_owner": true,
+    "source": "validation_labels_claude.csv",
+    "method": "Claude's blind review of 2018/2022 image chips for the 200-parcel sample"
+  },
+  "offset": {
+    "accepted_by_owner": true,
+    "source": "auto_phase_correlation",
+    "method": "phase correlation at 5 established-road intersections; max 4.44 m"
+  },
+  "note": "Owner chose to accept these instead of hand labeling and a QGIS measurement. An owner validation_labels.csv or filled offset_measurements.csv still overrides them."
+}

@@ -18,7 +18,7 @@ ParcelWatch compares two dates of free NAIP aerial imagery, detects buildings on
 | # | Goal | Measured by |
 | --- | --- | --- |
 | G1 | Prove the owner can build an assessor-grade GeoAI change detection pipeline end to end | Working pipeline on the 25 km² Wake County pilot, reproducible from one config file |
-| G2 | Show credible accuracy, honestly reported | Precision and miss rate from a 200-parcel hand-checked sample |
+| G2 | Show credible accuracy, honestly reported | Precision and miss rate from a 200-parcel checked sample (pilot: Claude's blind chip review, accepted by the owner) |
 | G3 | Speak the buyer's language: dollars | Estimated missed assessed value and yearly tax, adjusted by measured precision |
 | G4 | Win interviews in the US and Gulf geospatial market | Public repo, public map, case study, LinkedIn post shipped by week 8 |
 | G5 | Transferable design | Swapping county = new config file + field mapping, no code rewrite |
@@ -53,7 +53,7 @@ Priority: **P0** = must ship in v1, **P1** = ship if on schedule, **P2** = futur
 | F5 | Object-level change classification | P0 | Every After building labeled new / expanded / unchanged; every unmatched Before building labeled demolished |
 | F6 | Parcel roll-up | P0 | One row per changed parcel: counts by change type, added area (m² and sq ft) |
 | F7 | Permit cross-check | P0 | Each changed parcel gets permit count in the window and `flag_unpermitted` |
-| F8 | Validation workflow | P0 | Sampling sheet generated; metrics computed after hand labeling |
+| F8 | Validation workflow | P0 | Sampling sheet generated; metrics computed after labeling (owner by hand, or an accepted Claude review) |
 | F9 | Dollar estimate | P0 | Missed value and yearly tax, raw and precision-adjusted, with the formula shown |
 | F10 | Public web map | P0 | Before/after swipe, H3 hex layer, legend, headline stats; works on phone |
 | F11 | Case study page + README | P0 | Result-first, includes limitations |
@@ -66,8 +66,8 @@ Priority: **P0** = must ship in v1, **P1** = ship if on schedule, **P2** = futur
 
 | Metric | Target | How measured |
 | --- | --- | --- |
-| Precision of unpermitted flags | **≥ 70%** | Hand-checked 100 flagged parcels |
-| Miss rate in "unchanged" sample | **≤ 10%** (10 of 100) | Hand-checked 100 unchanged parcels |
+| Precision of unpermitted flags | **≥ 70%** | 100 checked flagged parcels |
+| Miss rate in "unchanged" sample | **≤ 10%** (10 of 100) | 100 checked unchanged parcels |
 | Pipeline reproducibility | Same outputs on a clean re-run | `parcelwatch` CLI from config only |
 | Runtime, local steps | < 30 minutes for the 25 km² box (excluding GPU steps) | Timed run on owner's laptop |
 | Web map load | < 3 seconds on 4G, Lighthouse performance ≥ 90 | Lighthouse mobile |

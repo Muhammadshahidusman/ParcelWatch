@@ -65,7 +65,7 @@ All code lives in `src/parcelwatch/`. Notebooks import from here and never defin
 | `prepare.py` | `mosaic(folder, out)`, `align_to(reference, target, out)`, `clip_vectors(aoi, crs)`, `measure_offset(before, after, points)` | Raw files | `data/processed/naip_before.tif`, `naip_after_aligned.tif`, clipped vectors, `results/alignment_report.json` |
 | `detect.py` | `run_v0(image, out)`, `make_training_tiles(image, labels)`, `train_v1(...)`, `run_v1(image, model, out)` | Processed images | `results/buildings_{before,after}_{v0,v1}.gpkg` |
 | `changes.py` | `classify_changes(before, after, cfg) -> (after_labeled, demolished)`, `rollup_to_parcels(changes, parcels)`, `attach_permits(parcel_changes, permits, window)` | Building layers, parcels, permits | `results/building_changes.gpkg`, `results/parcel_changes.gpkg` |
-| `validate.py` | `make_sample_sheet(parcel_changes, parcels)`, `compute_metrics(sheet) -> Metrics` | Parcel changes + hand-labeled CSV | `results/validation_sheet.csv`, `results/metrics.json` |
+| `validate.py` | `make_sample_sheet(parcel_changes, parcels)`, `compute_metrics(sheet) -> Metrics` | Parcel changes + labeled CSV (owner, or accepted Claude review) | `results/validation_sheet.csv`, `results/metrics.json` |
 | `valuation.py` | `value_per_sqft(parcels, years)`, `estimate_missed_tax(parcel_changes, precision, cfg)` | Parcel changes, metrics | `results/valuation.json` |
 | `publish.py` | `to_h3(parcel_changes, res, min_parcels)`, `export_pmtiles(gdf, out)`, `write_stats(json)` | Parcel changes | `web/data/changes_h3.pmtiles`, `web/data/stats.json` |
 | `cli.py` | `download`, `prepare`, `detect`, `changes`, `validate`, `report` | Config path | Calls the modules above |

@@ -1,4 +1,5 @@
 {
   "model": "v0",
-  "rule": "v1 precision >= v0 precision on the same 200-parcel sample"
+  "rule": "v1 precision >= v0 precision on the same 200-parcel sample",
+  "reason": "v1 not trained yet: it needs a GPU run of notebooks/colab_train_v1.ipynb (local Quadro P2000 measured at about 50 h for 50 epochs), so v0 is kept"
 }
