@@ -1,9 +1,11 @@
 # Run local v1 training in cycles: TrainMinutes on, PauseMinutes frozen, until it ends.
 # Freezing uses NtSuspendProcess, so no progress is lost. Keeps Windows awake meanwhile.
 #   powershell -File scripts/gpu_duty_cycle.ps1 -TrainMinutes 120 -PauseMinutes 60
+# -StartFrozenMinutes N freezes first for N minutes, then starts the cycle.
 param(
     [int]$TrainMinutes = 120,
     [int]$PauseMinutes = 60,
+    [int]$StartFrozenMinutes = 0,
     [string]$Match = "*train_v1_local*"
 )
 
@@ -39,6 +41,10 @@ function WaitWhileAlive([int]$minutes) {
     return $true
 }
 
+if ($StartFrozenMinutes -gt 0) {
+    SetAll $false; Say "frozen for $StartFrozenMinutes min before the cycle"
+    [void](WaitWhileAlive $StartFrozenMinutes)
+}
 while (Alive) {
     SetAll $true; Say "resumed"
     if (-not (WaitWhileAlive $TrainMinutes)) { break }
