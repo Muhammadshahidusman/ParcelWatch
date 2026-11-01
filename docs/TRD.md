@@ -33,7 +33,7 @@ flowchart LR
   PUB --> SITE[Static web map<br/>MapLibre GL JS on GitHub Pages]
 ```
 
-**Compute split:** steps 1, 2, 4, 5, 6 run on the owner's Windows laptop. Step 3 (detection and training) runs on Google Colab with a T4 GPU, reading and writing through Google Drive.
+**Compute split:** steps 1, 2, 4, 5, 6 run on the owner's Windows laptop. Step 3 also runs on the laptop: v0 on the CPU, v1 training and inference on its 4 GB GPU (`scripts/train_v1_local.py`, batch 2, about 7 h). Google Colab with a T4 GPU, through Google Drive, is the fallback.
 
 ## 2. Tech stack (locked)
 
@@ -218,7 +218,7 @@ Fixed now so a future build doesn't have to re-decide. Framework: FastAPI. Read-
 | Resource | Spec | Cost |
 | --- | --- | --- |
 | Dev machine | Owner's Windows laptop, project at `D:\ParcelWatch` | 0 |
-| GPU | Google Colab free tier, T4. Fallback: Kaggle notebooks (30 GPU hours/week) | 0 |
+| GPU | Owner's laptop, Quadro P2000 4 GB. Fallbacks: Google Colab free tier (T4), Kaggle notebooks (30 GPU hours/week) | 0 |
 | Storage | Local disk. Expect ~280 MB per NAIP year for 25 km² at 60 cm × 4 bands, under 3 GB total with tiles and models | 0 |
 | Code hosting | GitHub public repo | 0 |
 | Web hosting | GitHub Pages | 0 |
