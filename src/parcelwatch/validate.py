@@ -199,9 +199,11 @@ def run(cfg: Config, *, make_sheet: bool, score: bool, force: bool = False) -> N
             if not path.exists():
                 continue
             pc = gpd.read_file(path)
+            # Each model is scored on its own current flags; the sheet's group is the
+            # sample design (drawn from v0's flags under the flag rule of the time).
             ids = set(pc.loc[pc["flag_unpermitted"].astype(bool), "parcel_id"].astype(str))
-            result[m] = compute_metrics(sheet, cfg, None if m == "v0" else ids).to_dict()
-            result[m]["precision_by_claim"] = precision_by_claim(sheet, None if m == "v0" else pc)
+            result[m] = compute_metrics(sheet, cfg, ids).to_dict()
+            result[m]["precision_by_claim"] = precision_by_claim(sheet, pc)
         chosen = "v0"
         if "v1" in result:
             v0p, v1p = result["v0"]["precision"], result["v1"]["precision"]

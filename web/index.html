@@ -30,14 +30,14 @@
   <aside class="panel" id="panel" aria-label="Headline statistics">
     <button class="sheet-handle" id="sheet-handle" type="button" aria-label="Expand statistics"></button>
     <div class="hero" id="hero"><span class="skeleton"></span></div>
-    <p class="hero-label">parcels with unpermitted change detected</p>
+    <p class="hero-label">parcels with an unpermitted new building detected</p>
     <hr>
     <ul class="rows" id="rows">
       <li><svg class="glyph" viewBox="0 0 14 14" aria-hidden="true"><rect x="1" y="1" width="12" height="12" fill="var(--chg-new)"/></svg>New buildings<span class="count" id="n-new">–</span></li>
       <li><svg class="glyph" viewBox="0 0 14 14" aria-hidden="true"><rect x="1" y="1" width="12" height="12" fill="none" stroke="var(--chg-expanded)" stroke-width="2"/><rect x="1" y="1" width="6" height="12" fill="var(--chg-expanded)"/></svg>Expanded<span class="count" id="n-expanded">–</span></li>
       <li><svg class="glyph" viewBox="0 0 14 14" aria-hidden="true"><rect x="1" y="1" width="12" height="12" fill="none" stroke="var(--chg-demolished)" stroke-width="2"/><line x1="1" y1="13" x2="13" y2="1" stroke="var(--chg-demolished)" stroke-width="2"/></svg>Demolished<span class="count" id="n-demolished">–</span></li>
     </ul>
-    <p class="note">Buildings on flagged parcels, by change type.</p>
+    <p class="note">Buildings on flagged parcels, by change type. Only a new building triggers a flag.</p>
     <hr>
     <div class="small">Est. missed tax</div>
     <div class="money" id="money"><span class="skeleton"></span></div>
@@ -47,7 +47,7 @@
     <p class="caption" style="margin-top:16px">Flags are leads from aerial imagery, not findings. A field review is needed before any action.</p>
   </aside>
 
-  <section class="map-wrap" id="map-wrap" aria-label="Before and after aerial imagery of a 25 km² study area in east Wake County, North Carolina, 2018 and 2022, with hexagons shaded by the number of parcels with unpermitted change detected.">
+  <section class="map-wrap" id="map-wrap" aria-label="Before and after aerial imagery of a 25 km² study area in east Wake County, North Carolina, 2018 and 2022, with hexagons shaded by the number of parcels with an unpermitted new building detected.">
     <div class="loading caption" id="loading">Loading imagery…</div>
     <div id="map-before" class="map"></div>
     <div id="map-after" class="map"></div>

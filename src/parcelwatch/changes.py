@@ -164,7 +164,8 @@ def rollup_to_parcels(
     """Assign each changed building to one parcel by representative point and aggregate.
 
     One building maps to exactly one parcel (its representative point falls ``within`` it);
-    buildings outside every parcel are logged as orphans and skipped.
+    buildings outside every parcel are logged as orphans and skipped. ``added_m2`` sums
+    only the change types in ``change.flag_change_types``, so it's the area a flag claims.
 
     Args:
         changes: Output of :func:`combine_changes`.
@@ -203,7 +204,8 @@ def rollup_to_parcels(
     agg = pd.DataFrame(index=counts.index)
     for kind in ("new", "expanded", "demolished"):
         agg[f"n_{kind}"] = counts.get(kind, 0)
-    agg["added_m2"] = j.groupby("parcel_id")["added_m2"].sum()
+    flaggable = j["change"].isin(cfg.change.flag_change_types)
+    agg["added_m2"] = j["added_m2"].where(flaggable, 0.0).groupby(j["parcel_id"]).sum()
     agg["added_sqft"] = agg["added_m2"] * cfg.valuation.sqft_per_m2
     out = p.drop_duplicates("parcel_id").merge(agg, left_on="parcel_id", right_index=True)
     return gpd.GeoDataFrame(out[PARCEL_COLUMNS], crs=crs).reset_index(drop=True)
@@ -216,6 +218,9 @@ def attach_permits(
     cfg: Config,
 ) -> gpd.GeoDataFrame:
     """Count permits per parcel (spatial within or PIN match) and set ``flag_unpermitted``.
+
+    A parcel is flagged when it has no counting permit in the window and at least one
+    change of a type in ``change.flag_change_types``.
 
     Args:
         parcel_changes: Output of :func:`rollup_to_parcels`.
@@ -230,9 +235,12 @@ def attach_permits(
     require_crs(parcel_changes, crs, "parcel_changes")
     f = cfg.fields
     out = parcel_changes.copy()
+    flaggable = pd.concat(
+        [out[f"n_{kind}"] > 0 for kind in cfg.change.flag_change_types], axis=1
+    ).any(axis=1)
     if permits.empty or out.empty:
         out["n_permits"] = 0
-        out["flag_unpermitted"] = True
+        out["flag_unpermitted"] = flaggable
         return out
     require_crs(permits, crs, "permits")
     start, end = window
@@ -261,7 +269,7 @@ def attach_permits(
     matched = pd.concat(pairs, ignore_index=True).drop_duplicates() if pairs else pd.DataFrame()
     n = matched.groupby("parcel_id")["_pid"].nunique() if not matched.empty else pd.Series()
     out["n_permits"] = out["parcel_id"].map(n).fillna(0).astype(int)
-    out["flag_unpermitted"] = out["n_permits"] == 0
+    out["flag_unpermitted"] = (out["n_permits"] == 0) & flaggable
     return out
 
 

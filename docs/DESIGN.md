@@ -214,7 +214,7 @@ Map with bottom sheet at peek height showing the hero number → swipe works wit
 
 | Context | Use | Avoid |
 | --- | --- | --- |
-| Flag label | "Unpermitted change detected" | "Illegal", "violation", "tax cheat" |
+| Flag label | "Unpermitted new building detected" | "Illegal", "violation", "tax cheat" |
 | Money | "Estimated missed tax" + "adjusted for 74% precision" | Unqualified dollar totals |
 | Accuracy | "74 of 100 flags confirmed by hand review" (name the actual reviewer, e.g. "by Claude's review of image chips") | "74% accurate" alone |
 | Disclaimer (map footer and case study) | "Flags are leads from aerial imagery, not findings. A field review is needed before any action." | |

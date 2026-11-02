@@ -113,7 +113,7 @@
       new maplibregl.Popup({ closeButton: true, maxWidth: "260px" })
         .setLngLat(e.lngLat)
         .setHTML('<div class="popup"><dl><dt>Parcels</dt><dd>' + fmt(p.n_parcels) +
-          "</dd><dt>Changed</dt><dd>" + fmt(p.n_changed) + "</dd><dt>Unpermitted change</dt><dd>" +
+          "</dd><dt>Changed</dt><dd>" + fmt(p.n_changed) + "</dd><dt>Unpermitted new building</dt><dd>" +
           fmt(p.n_flagged) + "</dd><dt>Added sq ft</dt><dd>" + fmt(p.added_sqft) + "</dd></dl></div>")
         .addTo(map);
     });

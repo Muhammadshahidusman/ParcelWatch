@@ -51,8 +51,8 @@ Priority: **P0** = must ship in v1, **P1** = ship if on schedule, **P2** = futur
 | F3 | Building detection v0 (pretrained) | P0 | Building polygons for both years by end of week 2 |
 | F4 | Building detection v1 (fine-tuned 4-band Mask R-CNN) | P0 | Beats v0 on the validation sample, or v0 is kept and the reason documented |
 | F5 | Object-level change classification | P0 | Every After building labeled new / expanded / unchanged; every unmatched Before building labeled demolished |
-| F6 | Parcel roll-up | P0 | One row per changed parcel: counts by change type, added area (m² and sq ft) |
-| F7 | Permit cross-check | P0 | Each changed parcel gets permit count in the window and `flag_unpermitted` |
+| F6 | Parcel roll-up | P0 | One row per changed parcel: counts by change type, added area (m² and sq ft) of the change types that flag (new buildings only) |
+| F7 | Permit cross-check | P0 | Each changed parcel gets permit count in the window and `flag_unpermitted`: true when it has a new building and no permit (expansions and demolitions don't flag, since 2026-11-02) |
 | F8 | Validation workflow | P0 | Sampling sheet generated; metrics computed after labeling (owner by hand, or an accepted Claude review) |
 | F9 | Dollar estimate | P0 | Missed value and yearly tax, raw and precision-adjusted, with the formula shown |
 | F10 | Public web map | P0 | Before/after swipe, H3 hex layer, legend, headline stats; works on phone |

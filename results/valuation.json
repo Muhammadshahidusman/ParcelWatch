@@ -14,11 +14,11 @@
   "tax_year": 2026,
   "formula": "yearly_tax = added_sqft * value_per_sqft * assessment_ratio * rate_cents / 100 / 100; reported = sum(flagged) * precision",
   "validation": "claude_accepted",
-  "n_flagged": 669,
-  "added_sqft_flagged": 1052470.3932925384,
-  "precision": 0.3225806451612903,
-  "est_missed_value_usd_raw": 181290209.61715412,
-  "est_yearly_tax_usd_raw": 1407029.011327784,
-  "est_missed_value_usd_adjusted": 58480712.77972713,
-  "est_yearly_tax_usd_adjusted": 453880.326234769
+  "n_flagged": 325,
+  "added_sqft_flagged": 883078.9905596046,
+  "precision": 0.5882352941176471,
+  "est_missed_value_usd_raw": 152112188.929344,
+  "est_yearly_tax_usd_raw": 1242689.2271070757,
+  "est_missed_value_usd_adjusted": 89477758.19373177,
+  "est_yearly_tax_usd_adjusted": 730993.6630041623
 }

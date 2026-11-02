@@ -80,7 +80,9 @@ All code lives in `src/parcelwatch/`. Notebooks import from here and never defin
 4. `added_m2 = max(after_area − matched_before_area, 0)` for new and expanded, else 0.
 5. Before buildings that intersect no buffered After building → `demolished`.
 
-**Parcel roll-up:** assign each building to a parcel by its `representative_point()` falling `within` the parcel. One building = one parcel, always.
+**Parcel roll-up:** assign each building to a parcel by its `representative_point()` falling `within` the parcel. One building = one parcel, always. The parcel's `added_m2` sums only the change types in `change.flag_change_types` (`[new]`).
+
+**Flag rule:** `flag_unpermitted` = no counting permit in the window **and** at least one change of a type in `change.flag_change_types`. Since 2026-11-02 that's new buildings only: in the 200-parcel check, expanded and demolished-only flags were 0 of 14 real with v1 (1 of 44 with v0).
 
 **Permit check:** permit window = **2017-10-22 to 2022-10-06** (12 months before the 2018-10-22 Before image, through the 2022-10-06 After image). Parse `ISSUE_DATE` with format `%Y/%m/%d %H:%M:%S%z`. Keep only the building-related `PERMIT_TYPE` values listed in the config. Permit points come from `X` (longitude) and `Y` (latitude) in EPSG:4326. A permit matches a parcel if its point falls **within** the parcel **or** its `PIN` equals the parcel's `PIN_NUM`; either counts. `flag_unpermitted = n_permits == 0`.
 
@@ -126,9 +128,9 @@ Every output file follows these schemas. Column names are snake_case. CRS is EPS
 | `parcel_id` | str | From `PIN_NUM` |
 | `city` | str | From `CITY_DECODE`; drives the town tax rate |
 | `n_new`, `n_expanded`, `n_demolished` | int | |
-| `added_m2`, `added_sqft` | float | sqft = m² × 10.764 |
+| `added_m2`, `added_sqft` | float | Area of flagging change types (new buildings); sqft = m² × 10.764 |
 | `n_permits` | int | In window |
-| `flag_unpermitted` | bool | |
+| `flag_unpermitted` | bool | No permit and at least one new building |
 | `value_per_sqft` | float | County median, same for all rows in v1 |
 | `est_missed_value_usd` | float | Raw, not precision-adjusted |
 | `est_yearly_tax_usd` | float | Raw |

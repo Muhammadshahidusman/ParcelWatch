@@ -114,6 +114,9 @@ change:
   min_building_area_m2: 10.0
   expanded_min_added_m2: 20.0
   expanded_min_ratio: 1.2
+  # Change types that can flag a parcel and count toward its added area. New buildings
+  # only since 2026-11-02: expanded and demolished-only flags were 0 of 14 real with v1.
+  flag_change_types: [new]
 
 validation:
   n_flagged: 100

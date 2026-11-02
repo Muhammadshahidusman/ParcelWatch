@@ -1,5 +1,5 @@
 {
   "model": "v1",
   "rule": "v1 precision >= v0 precision on the same 200-parcel sample",
-  "reason": "v1 precision 0.32 vs v0 0.20 on the same sample: promoted"
+  "reason": "v1 precision 0.59 vs v0 0.33 on the same sample: promoted"
 }

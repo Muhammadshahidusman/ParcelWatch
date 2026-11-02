@@ -1,30 +1,22 @@
 {
   "n_sample": 200,
   "tp": 10,
-  "fp": 21,
+  "fp": 7,
   "fn": 23,
-  "tn": 146,
-  "precision": 0.3225806451612903,
-  "miss_rate": 0.13609467455621302,
+  "tn": 160,
+  "precision": 0.5882352941176471,
+  "miss_rate": 0.12568306010928962,
   "false_alarm_causes": {
-    "other": 11,
-    "trees": 10
+    "trees": 6,
+    "other": 1
   },
   "precision_by_claim": {
     "new": {
       "n": 16,
       "confirmed": 10
     },
-    "expanded": {
-      "n": 10,
-      "confirmed": 0
-    },
     "new_and_expanded": {
       "n": 1,
-      "confirmed": 0
-    },
-    "demolished_only": {
-      "n": 4,
       "confirmed": 0
     }
   },
@@ -32,16 +24,15 @@
   "by_model": {
     "v0": {
       "n_sample": 200,
-      "tp": 20,
-      "fp": 80,
-      "fn": 13,
-      "tn": 87,
-      "precision": 0.2,
-      "miss_rate": 0.13,
+      "tp": 19,
+      "fp": 38,
+      "fn": 14,
+      "tn": 129,
+      "precision": 0.3333333333333333,
+      "miss_rate": 0.0979020979020979,
       "false_alarm_causes": {
-        "other": 44,
-        "trees": 34,
-        "trailer_or_vehicle": 1,
+        "trees": 22,
+        "other": 15,
         "solar_or_roof_material": 1
       },
       "precision_by_claim": {
@@ -49,16 +40,8 @@
           "n": 56,
           "confirmed": 19
         },
-        "expanded": {
-          "n": 35,
-          "confirmed": 1
-        },
         "new_and_expanded": {
           "n": 1,
-          "confirmed": 0
-        },
-        "demolished_only": {
-          "n": 8,
           "confirmed": 0
         }
       }
@@ -66,30 +49,22 @@
     "v1": {
       "n_sample": 200,
       "tp": 10,
-      "fp": 21,
+      "fp": 7,
       "fn": 23,
-      "tn": 146,
-      "precision": 0.3225806451612903,
-      "miss_rate": 0.13609467455621302,
+      "tn": 160,
+      "precision": 0.5882352941176471,
+      "miss_rate": 0.12568306010928962,
       "false_alarm_causes": {
-        "other": 11,
-        "trees": 10
+        "trees": 6,
+        "other": 1
       },
       "precision_by_claim": {
         "new": {
           "n": 16,
           "confirmed": 10
         },
-        "expanded": {
-          "n": 10,
-          "confirmed": 0
-        },
         "new_and_expanded": {
           "n": 1,
-          "confirmed": 0
-        },
-        "demolished_only": {
-          "n": 4,
           "confirmed": 0
         }
       }

@@ -198,6 +198,7 @@ class ChangeConfig(_Strict):
     min_building_area_m2: float = Field(ge=0)
     expanded_min_added_m2: float = Field(ge=0)
     expanded_min_ratio: float = Field(ge=1)
+    flag_change_types: list[Literal["new", "expanded", "demolished"]] = Field(min_length=1)
 
 
 class ValidationTargets(_Strict):

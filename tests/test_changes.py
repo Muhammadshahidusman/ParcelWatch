@@ -166,9 +166,26 @@ def test_rollup_counts_and_area(cfg: Config, parcels: gpd.GeoDataFrame) -> None:
     assert pc.loc["C", ["n_new", "n_expanded", "n_demolished"]].tolist() == [0, 0, 1]
     assert pc.loc["B", "added_m2"] == pytest.approx(120.0)
     assert pc.loc["B", "added_sqft"] == pytest.approx(120.0 * 10.764)
+    assert pc.loc["A", "added_m2"] == 0.0  # expanded doesn't count: flags are new-only
     assert pc.loc["C", "added_m2"] == 0.0
     assert pc.loc["A", "city"] == "WENDELL"
     assert pc.crs == CRS
+
+
+def with_flag_types(cfg: Config, kinds: list[str]) -> Config:
+    """The pilot config with a different ``change.flag_change_types``."""
+    return cfg.model_copy(
+        update={"change": cfg.change.model_copy(update={"flag_change_types": kinds})}
+    )
+
+
+def test_rollup_added_area_follows_flag_change_types(
+    cfg: Config, parcels: gpd.GeoDataFrame
+) -> None:
+    every = with_flag_types(cfg, ["new", "expanded", "demolished"])
+    a, d = classify_changes(gdf([sq(10, 10, 10)]), gdf([sq(10, 10, 13, 10)]), every, 3.0)
+    pc = rollup_to_parcels(combine_changes(a, d), parcels, every).set_index("parcel_id")
+    assert pc.loc["A", "added_m2"] == pytest.approx(30.0)
 
 
 def test_rollup_building_on_boundary_goes_to_one_parcel(
@@ -246,7 +263,23 @@ def test_attach_permits_spatial_or_pin(cfg: Config, parcels: gpd.GeoDataFrame) -
     assert out.loc["A", "n_permits"] == 1
     assert out.loc["B", "n_permits"] == 2
     assert out.loc["C", "n_permits"] == 0
+    # C is demolished only: no permit, but flags need a new building (pilot config)
+    assert out["flag_unpermitted"].to_dict() == {"A": False, "B": False, "C": False}
+    every = with_flag_types(cfg, ["new", "expanded", "demolished"])
+    out = attach_permits(pc, permits, window, every).set_index("parcel_id")
     assert out["flag_unpermitted"].to_dict() == {"A": False, "B": False, "C": True}
+
+
+def test_attach_permits_flags_only_flag_change_types(
+    cfg: Config, parcels: gpd.GeoDataFrame
+) -> None:
+    before = gdf([sq(10, 10, 10), sq(110, 10, 10)])
+    after = gdf([sq(10, 10, 13, 10), sq(60, 10, 10)])  # A expanded, B new, C demolished
+    a, d = classify_changes(before, after, cfg, 3.0)
+    pc = rollup_to_parcels(combine_changes(a, d), parcels, cfg)
+    window = (cfg.permits.window_start, cfg.permits.window_end)
+    out = attach_permits(pc, _permits(cfg, []), window, cfg).set_index("parcel_id")
+    assert out["flag_unpermitted"].to_dict() == {"A": False, "B": True, "C": False}
 
 
 def test_attach_permits_empty(cfg: Config, parcels: gpd.GeoDataFrame) -> None:
@@ -266,5 +299,6 @@ def test_tiny_scene_end_to_end(cfg: Config, tiny_scene: dict[str, gpd.GeoDataFra
     out = attach_permits(pc, permits, (cfg.permits.window_start, cfg.permits.window_end), cfg)
     out = out.set_index("parcel_id")
     assert out.loc["0000000002", "n_new"] == 1 and not out.loc["0000000002", "flag_unpermitted"]
-    assert out.loc["0000000003", "n_demolished"] == 1 and out.loc["0000000003", "flag_unpermitted"]
+    assert out.loc["0000000003", "n_demolished"] == 1
+    assert not out.loc["0000000003", "flag_unpermitted"]  # demolished only isn't flagged
     assert "0000000001" not in out.index

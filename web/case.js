@@ -10,7 +10,7 @@
     $("t-flagged").textContent = fmt(s.n_flagged);
     $("lede").textContent = "ParcelWatch compared " + s.before_year + " and " + s.after_year +
       " aerial imagery over " + s.area_km2 + " km² of east Wake County, NC. " + fmt(s.n_flagged) +
-      " parcels show building change with no permit on file, adding about " +
+      " parcels show a new building with no permit on file, adding about " +
       fmt(s.added_sqft_flagged) + " sq ft.";
     if (s.precision === null) {
       $("t-precision").textContent = "Pending";

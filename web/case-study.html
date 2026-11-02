@@ -25,7 +25,7 @@
   <p id="lede">ParcelWatch compared 2018 and 2022 aerial imagery over 25 km² of east Wake County, NC, and checked every changed parcel against the county's building permits.</p>
 
   <div class="tiles">
-    <div class="tile"><div class="small">Parcels flagged</div><div class="value" id="t-flagged">–</div><div class="caption">unpermitted change detected</div></div>
+    <div class="tile"><div class="small">Parcels flagged</div><div class="value" id="t-flagged">–</div><div class="caption">unpermitted new building detected</div></div>
     <div class="tile"><div class="small">Precision</div><div class="value" id="t-precision">–</div><div class="caption" id="t-precision-note">hand-checked flags</div></div>
     <div class="tile"><div class="small">Est. missed tax</div><div class="value" id="t-tax">–</div><div class="caption" id="t-tax-note">per year, precision-adjusted</div></div>
   </div>
@@ -59,7 +59,7 @@
     <li><b>Prepare.</b> Both years go onto one 0.6 m grid in NAD83 / UTM 17N. The offset between years is measured at 5 road intersections; the match tolerance is that offset plus 1 m, kept between 3 and 6 m.</li>
     <li><b>Detect.</b> One building model, one set of settings, both years.</li>
     <li><b>Compare buildings, not pixels.</b> NAIP is only accurate to about ±6 m, so pixel differencing would light up every roof edge. Buildings are matched as objects: no match means new; at least +20 m² and 1.2× the old area means expanded; a 2018 building with no 2022 match means demolished.</li>
-    <li><b>Check permits.</b> A changed parcel counts as permitted if any building-related permit issued between 2017-10-22 and 2022-10-06 sits inside it or carries its parcel number.</li>
+    <li><b>Check permits.</b> A changed parcel counts as permitted if any building-related permit issued between 2017-10-22 and 2022-10-06 sits inside it or carries its parcel number. Only parcels with a new building and no permit are flagged: in the accuracy check, expansion and demolition flags were almost never real.</li>
     <li><b>Validate and price.</b> 100 flagged and 100 unchanged parcels are drawn at random and checked by eye, blind to the model's answer.</li>
   </ol>
 
