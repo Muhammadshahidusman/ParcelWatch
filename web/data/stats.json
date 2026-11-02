@@ -2,56 +2,54 @@
   "area_km2": 25.0,
   "before_year": 2018,
   "after_year": 2022,
-  "n_new": 747,
-  "n_expanded": 507,
-  "n_demolished": 208,
-  "n_flagged": 1230,
-  "n_changed": 2170,
-  "added_sqft_flagged": 1618300.0,
-  "precision": 0.2,
-  "miss_rate": 0.13,
-  "validation_n_flagged": 100,
-  "validation_tp": 20,
+  "n_new": 338,
+  "n_expanded": 257,
+  "n_demolished": 141,
+  "n_flagged": 669,
+  "n_changed": 1400,
+  "added_sqft_flagged": 1052500.0,
+  "precision": 0.3225806451612903,
+  "miss_rate": 0.13609467455621302,
+  "validation_n_flagged": 31,
+  "validation_tp": 10,
   "validation_status": "claude_accepted",
   "false_alarm_causes": {
-    "other": 44,
-    "trees": 34,
-    "trailer_or_vehicle": 1,
-    "solar_or_roof_material": 1
+    "other": 11,
+    "trees": 10
   },
   "precision_by_claim": {
     "new": {
-      "n": 56,
-      "confirmed": 19
+      "n": 16,
+      "confirmed": 10
     },
     "expanded": {
-      "n": 35,
-      "confirmed": 1
+      "n": 10,
+      "confirmed": 0
     },
     "new_and_expanded": {
       "n": 1,
       "confirmed": 0
     },
     "demolished_only": {
-      "n": 8,
+      "n": 4,
       "confirmed": 0
     }
   },
   "confusion": {
-    "tp": 20,
-    "fp": 80,
-    "fn": 13,
-    "tn": 87
+    "tp": 10,
+    "fp": 21,
+    "fn": 23,
+    "tn": 146
   },
-  "est_yearly_tax_usd_adjusted": 385300.0,
+  "est_yearly_tax_usd_adjusted": 453900.0,
   "value_per_sqft": 172.25,
   "tax_year": 2026,
-  "model": "v0",
+  "model": "v1",
   "hex_breaks": [
-    2.8000000000000007,
+    2.0,
+    2.8000000000000043,
     4.0,
-    7.0,
-    11.0
+    6.6000000000000085
   ],
   "naip_items": {
     "before": [
@@ -73,5 +71,5 @@
     -78.4211,
     35.7787
   ],
-  "generated_at": "2026-10-26T02:51:20Z"
+  "generated_at": "2026-11-02T17:22:46Z"
 }

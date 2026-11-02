@@ -9,26 +9,37 @@
 | | |
 | --- | --- |
 | Parcels in the study box | 5,667 |
-| Parcels with detected building change | 2,170 |
-| Of those, with no building permit in the window | **1,230** |
-| Added area on flagged parcels | 1.62 million sq ft |
-| Estimated missed tax, raw | $1.93 million / yr |
-| Precision of flags (200-parcel check, see below) | **20%** (20 of 100 confirmed) |
-| Estimated missed tax, adjusted for precision | **$385,300 / yr** |
+| Parcels with detected building change | 1,400 |
+| Of those, with no building permit in the window | **669** |
+| Added area on flagged parcels | 1.05 million sq ft |
+| Estimated missed tax, raw | $1.41 million / yr |
+| Precision of flags (200-parcel check, see below) | **32%** (10 of 31 confirmed) |
+| Estimated missed tax, adjusted for precision | **$453,900 / yr** |
 
-> **Status (2026-10-26):** the full pipeline runs end to end on real data with the pretrained v0 model. The 200 validation parcels were labeled blind by Claude from before/after image chips and accepted by the owner; that's an image review, not a field check. The fine-tuned v1 model has training tiles and a Colab notebook ready but isn't trained yet, so v0 is the model in use.
+> **Status (2026-11-02):** the full pipeline runs end to end on real data with the fine-tuned v1 model, which replaced the pretrained v0 baseline after beating it on the same 200 parcels (32% vs 20% precision). The 200 validation parcels were labeled blind by Claude from before/after image chips and accepted by the owner; that's an image review, not a field check.
 
 ### What the accuracy check says
 
-The 200-parcel check (100 flagged, 100 unchanged, drawn with `random_state=42` and labeled blind from 2018/2022 image chips) shows where the baseline model works and where it doesn't:
+The 200-parcel check (100 flagged, 100 unchanged, drawn with `random_state=42` from the v0 baseline's results and labeled blind from 2018/2022 image chips) scores both models on the same parcels:
+
+| | v0 (pretrained) | v1 (fine-tuned, in use) |
+| --- | --- | --- |
+| Sample parcels flagged | 100 | 31 |
+| Confirmed as real change | 20 | 10 |
+| Precision | 20% | **32%** |
+| Miss rate in the rest of the sample | 13% | 14% |
+| False alarms from trees | 34 | 10 |
+
+By what v1 claimed:
 
 | What the model claimed | Flags | Confirmed | Precision |
 | --- | --- | --- | --- |
-| New building | 56 | 19 | 34% |
-| Expanded building | 35 | 1 | 3% |
-| Demolished only | 8 | 0 | 0% |
+| New building | 16 | 10 | **63%** |
+| Expanded building | 10 | 0 | 0% |
+| New and expanded | 1 | 0 | 0% |
+| Demolished only | 4 | 0 | 0% |
 
-New buildings are real a third of the time. "Expanded" flags are almost all outline noise: the pretrained model draws the same roof a little differently each year, and 20 m² is a small margin at 0.6 m pixels. Misses in the unchanged sample ran at 13% (target 10%). The top false-alarm causes are the same house drawn differently or missed in 2018 (44), trees hiding a roof in one year (34), and a trailer and a solar roof (1 each). Precision is far below the 70% target, and it's reported as it stands.
+Fine-tuning on 4-band tiles cut false alarms by three quarters and made new-building flags right nearly two times in three. "Expanded" and "demolished only" flags are still noise: the model draws the same roof a little differently each year, 20 m² is a small margin at 0.6 m pixels, and trees hide roofs in one year. v1 also flags fewer real changes than v0 (10 of v0's 20 confirmed ones), and 31 flags is a small sample, so the 32% has wide error bars. Overall precision is still far below the 70% target, and it's reported as it stands. v1's flags outside the 200 parcels weren't checked, because the sample was drawn before v1 existed.
 
 ## How it works
 
@@ -49,10 +60,12 @@ uv pip install -e ".[dev,ml]"
 parcelwatch download --config configs/wake_pilot.yaml   # ~600 MB
 parcelwatch prepare  --config configs/wake_pilot.yaml
 parcelwatch detect   --config configs/wake_pilot.yaml --model v0   # ~35 min on CPU
-parcelwatch changes  --config configs/wake_pilot.yaml --model v0
+python scripts/train_v1_local.py                         # v1: ~7.5 h on a 4 GB GPU (or Colab)
+parcelwatch detect   --config configs/wake_pilot.yaml --model v1   # ~13 min on GPU
+parcelwatch changes  --config configs/wake_pilot.yaml --model v1
 parcelwatch validate --config configs/wake_pilot.yaml --make-sheet  # then label, then --score
 parcelwatch report   --config configs/wake_pilot.yaml
-pytest -q                                                # 85 tests, no network or GPU
+pytest -q                                                # 87 tests, no network or GPU
 ```
 
 Every number, URL, date and field name lives in `configs/wake_pilot.yaml`. Another county is a new config file. Design and decisions: `CLAUDE.md`, `docs/PRD.md`, `docs/TRD.md`, `docs/DESIGN.md`.
@@ -60,7 +73,7 @@ Every number, URL, date and field name lives in `configs/wake_pilot.yaml`. Anoth
 ## Limitations
 
 - Flags are leads from aerial imagery, not findings. A field review is needed before any action.
-- The v0 baseline's expanded-building flags are mostly noise; trees and shadows cause both false alarms and misses.
+- Expanded and demolished-only flags are noise even with v1; only new-building flags are usually right. Trees and shadows cause both false alarms and misses.
 - Additions under 20 m² can't be told apart from noise at NAIP's resolution and accuracy.
 - Only roofed buildings count: no pools, decks, patios or interior work.
 - A permit anywhere in the window covers the whole parcel.

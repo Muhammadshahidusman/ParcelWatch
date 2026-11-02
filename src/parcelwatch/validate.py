@@ -201,6 +201,7 @@ def run(cfg: Config, *, make_sheet: bool, score: bool, force: bool = False) -> N
             pc = gpd.read_file(path)
             ids = set(pc.loc[pc["flag_unpermitted"].astype(bool), "parcel_id"].astype(str))
             result[m] = compute_metrics(sheet, cfg, None if m == "v0" else ids).to_dict()
+            result[m]["precision_by_claim"] = precision_by_claim(sheet, None if m == "v0" else pc)
         chosen = "v0"
         if "v1" in result:
             v0p, v1p = result["v0"]["precision"], result["v1"]["precision"]
@@ -210,7 +211,6 @@ def run(cfg: Config, *, make_sheet: bool, score: bool, force: bool = False) -> N
             "model": chosen,
             "by_model": result,
             "labeled_by": who,
-            "precision_by_claim": precision_by_claim(sheet),
         }
         p.metrics.write_text(json.dumps(metrics, indent=2), "utf-8")
         p.model_selection.write_text(
@@ -232,16 +232,27 @@ def run(cfg: Config, *, make_sheet: bool, score: bool, force: bool = False) -> N
         )
 
 
-def precision_by_claim(sheet: pd.DataFrame) -> dict[str, dict[str, int]]:
+def precision_by_claim(
+    sheet: pd.DataFrame, parcel_changes: pd.DataFrame | None = None
+) -> dict[str, dict[str, int]]:
     """Confirmed flags by what the model claimed (new, expanded, demolished only, mixed).
 
     Args:
         sheet: Labeled sheet with ``group``, ``n_new``, ``n_expanded`` and ``label``.
+        parcel_changes: Parcel changes of the model being scored (``parcel_id``, ``n_new``,
+            ``n_expanded``, ``flag_unpermitted``). The sheet's own group and counts come
+            from the model that drew the sample, so pass this for any other model.
 
     Returns:
-        ``{claim: {"n": flags, "confirmed": real changes}}`` for the flagged group.
+        ``{claim: {"n": flags, "confirmed": real changes}}`` for the flagged sample parcels.
     """
-    f = sheet[sheet["group"] == "flagged"]
+    if parcel_changes is None:
+        f = sheet[sheet["group"] == "flagged"]
+    else:
+        flagged = parcel_changes.loc[
+            parcel_changes["flag_unpermitted"].astype(bool), ["parcel_id", "n_new", "n_expanded"]
+        ].astype({"parcel_id": str})
+        f = sheet[["parcel_id", "label"]].astype({"parcel_id": str}).merge(flagged, on="parcel_id")
     new, exp = f["n_new"] > 0, f["n_expanded"] > 0
     claim = pd.Series("demolished_only", index=f.index)
     claim[new & ~exp] = "new"

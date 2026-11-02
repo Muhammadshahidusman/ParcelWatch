@@ -279,6 +279,22 @@ def test_precision_by_claim() -> None:
     }
 
 
+def test_precision_by_claim_uses_scored_models_flags_and_claims() -> None:
+    from parcelwatch.validate import precision_by_claim
+
+    # The sheet's group and counts are v0's; v1 flags b (expanded) and e (new) instead.
+    labels = ["new", "no_change", "no_change", "no_change", "new"]
+    sheet = pd.DataFrame({"parcel_id": list("abcde"), "group": ["flagged"] * 4 + ["unchanged"],
+                          "n_new": [1, 1, 0, 0, 0], "n_expanded": [0, 0, 1, 0, 0],
+                          "label": labels})  # fmt: skip
+    v1 = pd.DataFrame({"parcel_id": list("abe"), "n_new": [1, 0, 1], "n_expanded": [0, 2, 0],
+                       "flag_unpermitted": [False, True, True]})  # fmt: skip
+    assert precision_by_claim(sheet, v1) == {
+        "new": {"n": 1, "confirmed": 1},
+        "expanded": {"n": 1, "confirmed": 0},
+    }
+
+
 def test_claude_labels_accepted_by_owner(tmp_path) -> None:  # type: ignore[no-untyped-def]
     import json as _json
 
