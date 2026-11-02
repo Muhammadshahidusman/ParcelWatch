@@ -2,6 +2,8 @@
 
 **Find the buildings the tax roll missed.** ParcelWatch compares two dates of free USDA NAIP aerial imagery, detects every building on both, labels each parcel's change (new, expanded, demolished) and flags the parcels with a new building and no building permit on file. That's the service US county assessors buy from imagery vendors, because unpermitted construction never reaches the tax roll.
 
+**Live map:** https://muhammadshahidusman.github.io/ParcelWatch/ · **Case study:** https://muhammadshahidusman.github.io/ParcelWatch/case-study.html
+
 ![The same 400 m of east Wake County, NC in 2018 and 2022](web/img/before_after_readme.png)
 
 ## Result: east Wake County, NC, 2018 to 2022 (25 km² pilot)
