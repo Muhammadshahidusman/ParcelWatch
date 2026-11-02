@@ -9,7 +9,7 @@ description = "Find buildings added, expanded or removed on US parcels between t
 readme = "README.md"
 requires-python = ">=3.11,<3.12"
 license = { text = "MIT" }
-authors = [{ name = "Muhammad Shahid Usman", email = "mapsync360@gmail.com" }]
+authors = [{ name = "Muhammad Shahid Usman", email = "shahidusmaninfo@gmail.com" }]
 dependencies = [
     "geopandas>=1.0",
     "shapely>=2.0",

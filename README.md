@@ -76,4 +76,4 @@ Every number, URL, date and field name lives in `configs/wake_pilot.yaml`. Anoth
 
 ## Credits and license
 
-Imagery: USDA NAIP. Data: Wake County, NC (CC BY 4.0); Overture Maps Foundation (ODbL). Code: MIT, © 2026 Muhammad Shahid Usman (mapsync360@gmail.com).
+Imagery: USDA NAIP. Data: Wake County, NC (CC BY 4.0); Overture Maps Foundation (ODbL). Code: MIT, © 2026 Muhammad Shahid Usman (shahidusmaninfo@gmail.com).
