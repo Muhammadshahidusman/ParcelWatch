@@ -164,7 +164,13 @@ def drop_unlabeled_tiles(tiles_dir: Path, unlabeled: gpd.GeoDataFrame) -> int:
     return dropped
 
 
-def train_v1(tiles_dir: Path, out_dir: Path, cfg: Config, batch_size: int | None = None) -> Path:
+def train_v1(
+    tiles_dir: Path,
+    out_dir: Path,
+    cfg: Config,
+    batch_size: int | None = None,
+    resume_checkpoint: Path | None = None,
+) -> Path:
     """Fine-tune the 4-channel Mask R-CNN on the training tiles.
 
     Args:
@@ -172,6 +178,8 @@ def train_v1(tiles_dir: Path, out_dir: Path, cfg: Config, batch_size: int | None
         out_dir: Folder for checkpoints (``models/v1``).
         cfg: Loaded config (``model.v1`` and seed).
         batch_size: Override only when GPU memory forces it (logged in the run manifest).
+        resume_checkpoint: Full checkpoint (model, optimizer, scheduler, epoch, best IoU)
+            to continue an interrupted run from the next epoch.
 
     Returns:
         Path to the best weights file.
@@ -187,6 +195,8 @@ def train_v1(tiles_dir: Path, out_dir: Path, cfg: Config, batch_size: int | None
         output_dir=str(out_dir),
         num_channels=v1.num_channels,
         pretrained=True,
+        pretrained_model_path=str(resume_checkpoint) if resume_checkpoint else None,
+        resume_training=resume_checkpoint is not None,
         batch_size=bs,
         num_epochs=v1.epochs,
         learning_rate=v1.learning_rate,
@@ -196,7 +206,15 @@ def train_v1(tiles_dir: Path, out_dir: Path, cfg: Config, batch_size: int | None
     )
     best = out_dir / "best_model.pth"
     (out_dir / "train_settings.json").write_text(
-        json.dumps({**v1.model_dump(), "batch_size_used": bs, "seed": cfg.model.seed}, indent=2)
+        json.dumps(
+            {
+                **v1.model_dump(),
+                "batch_size_used": bs,
+                "seed": cfg.model.seed,
+                "resumed": resume_checkpoint is not None,
+            },
+            indent=2,
+        )
     )
     return best
 
