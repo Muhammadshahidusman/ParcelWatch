@@ -1,5 +1,7 @@
 # ParcelWatch
 
+Portfolio: https://muhammadshahidusman.github.io
+
 **Find the buildings the tax roll missed.** ParcelWatch compares two dates of free USDA NAIP aerial imagery, detects every building on both, labels each parcel's change (new, expanded, demolished) and flags the parcels with a new building and no building permit on file. That's the service US county assessors buy from imagery vendors, because unpermitted construction never reaches the tax roll.
 
 **Live map:** https://muhammadshahidusman.github.io/ParcelWatch/ · **Case study:** https://muhammadshahidusman.github.io/ParcelWatch/case-study.html
