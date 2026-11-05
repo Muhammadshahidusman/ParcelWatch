@@ -1,4 +1,4 @@
-"""Standard file locations, all relative to the project root (CLAUDE.md section 4)."""
+"""Standard file locations, all relative to the project root."""
 
 from __future__ import annotations
 

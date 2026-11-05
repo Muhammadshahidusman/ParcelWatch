@@ -25,7 +25,7 @@ def raw() -> dict:
 
 
 def test_pilot_config_matches_locked_decisions(cfg: Config) -> None:
-    """Spot-check values against CLAUDE.md section 3."""
+    """Spot-check locked config values."""
     assert cfg.aoi.bbox_wgs84 == (-78.4766, 35.7337, -78.4211, 35.7787)
     assert cfg.aoi.bbox_utm17n == (728214, 3957349, 733103, 3962472)
     assert cfg.aoi.working_crs == "EPSG:26917"

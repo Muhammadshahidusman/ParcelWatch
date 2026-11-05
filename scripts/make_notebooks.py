@@ -1,6 +1,6 @@
 """Generate the exploration notebooks 01_download ... 06_report.
 
-Notebooks only call ``parcelwatch`` functions and display results (CLAUDE.md rule 8).
+Notebooks only call ``parcelwatch`` functions and display results.
 """
 
 from __future__ import annotations

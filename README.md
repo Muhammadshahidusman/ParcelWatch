@@ -65,7 +65,7 @@ parcelwatch report   --config configs/wake_pilot.yaml
 pytest -q                                                # 89 tests, no network or GPU
 ```
 
-Every number, URL, date and field name lives in `configs/wake_pilot.yaml`. Another county is a new config file. Design and decisions: `CLAUDE.md`, `docs/PRD.md`, `docs/TRD.md`, `docs/DESIGN.md`.
+Every number, URL, date and field name lives in `configs/wake_pilot.yaml`. Another county is a new config file. Design and decisions: `docs/PRD.md`, `docs/TRD.md`, `docs/DESIGN.md`.
 
 ## Limitations
 
